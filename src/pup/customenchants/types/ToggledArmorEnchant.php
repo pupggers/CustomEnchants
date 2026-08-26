@@ -17,8 +17,13 @@ abstract class ToggledArmorEnchant extends CustomEnchant
     public static function onToggle(InventoryTransactionEvent $event)
     : void
     {
-        $player = $event->getTransaction()->getSource();
-        if (!isset(self::$armorListeners[$player->getName()])) {
+        self::ensureArmorListener($event->getTransaction()->getSource());
+    }
+
+    public static function ensureArmorListener(Player $player): void
+    {
+        $playerId = $player->getUniqueId()->toString();
+        if (!isset(self::$armorListeners[$playerId])) {
             $listener = new CallbackInventoryListener(
                 $run = static function (Inventory $inventory, int $slot, Item $old) use ($player)
                 : void {
@@ -47,7 +52,7 @@ abstract class ToggledArmorEnchant extends CustomEnchant
                     }
                 }
             );
-            self::$armorListeners[$player->getName()] = $listener;
+            self::$armorListeners[$playerId] = $listener;
             $player->getArmorInventory()->getListeners()->add($listener);
         }
     }
@@ -62,10 +67,10 @@ abstract class ToggledArmorEnchant extends CustomEnchant
     public static function removeArmorListener(Player $player)
     : void
     {
-        $playerName = $player->getName();
-        if (isset(self::$armorListeners[$playerName])) {
-            $player->getArmorInventory()->getListeners()->remove(self::$armorListeners[$playerName]);
-            unset(self::$armorListeners[$playerName]);
+        $playerId = $player->getUniqueId()->toString();
+        if (isset(self::$armorListeners[$playerId])) {
+            $player->getArmorInventory()->getListeners()->remove(self::$armorListeners[$playerId]);
+            unset(self::$armorListeners[$playerId]);
         }
     }
 

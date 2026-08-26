@@ -13,6 +13,7 @@ use pocketmine\network\mcpe\protocol\types\entity\PropertySyncData;
 use pocketmine\player\Player;
 use pocketmine\world\particle\BlockBreakParticle;
 use pup\customenchants\types\WeaponEnchant;
+use Random\RandomException;
 
 class ZuesEnchant extends WeaponEnchant
 {
@@ -35,6 +36,9 @@ class ZuesEnchant extends WeaponEnchant
         return 0;
     }
 
+    /**
+     * @throws RandomException
+     */
     public function onPostAttack(Entity $attacker, Entity $victim, int $enchantmentLevel)
     : void
     {
@@ -63,7 +67,7 @@ class ZuesEnchant extends WeaponEnchant
         $particle = new BlockBreakParticle($block);
 
         $player->getWorld()->addParticle($pos, $particle, $player->getWorld()->getPlayers());
-        $sound2 = PlaySoundPacket::create("ambient.weather.thunder", $pos->getX(), $pos->getY(), $pos->getZ(), 1, 1);
+        $sound2 = PlaySoundPacket::create("ambient.weather.thunder", $pos->getX(), $pos->getY(), $pos->getZ(), 1, 1,2, null);
 
         NetworkBroadcastUtils::broadcastPackets($player->getWorld()->getPlayers(), [$light2,
             $sound2]);

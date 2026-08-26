@@ -16,7 +16,7 @@ class AquaticEnchant extends ToggledArmorEnchant
     public function onEquip(Player $player, Item $item)
     : void
     {
-        $player->getEffects()->add(new EffectInstance(VanillaEffects::WATER_BREATHING(), 2147483647, 1));
+        $player->getEffects()->add(new EffectInstance(VanillaEffects::WATER_BREATHING(), 2147483647, 1,true, false, null, true));
     }
 
     public function onDequip(Player $player, Item $item)

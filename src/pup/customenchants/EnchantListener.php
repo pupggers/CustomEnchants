@@ -75,6 +75,7 @@ class EnchantListener implements Listener
     : void
     {
         $player = $event->getPlayer();
+        ToggledArmorEnchant::ensureArmorListener($player);
         foreach ($player->getArmorInventory()->getContents() as $item) {
             foreach ($item->getEnchantments() as $enchantment) {
                 $enchantment = $enchantment->getType();
@@ -98,10 +99,10 @@ class EnchantListener implements Listener
                 $enchantment = $enchantment->getType();
                 if ($enchantment instanceof ToggledArmorEnchant) {
                     $enchantment->onDequip($player, $item);
-                    ToggledArmorEnchant::removeArmorListener($player);
                 }
             }
         }
+        ToggledArmorEnchant::removeArmorListener($player);
     }
 
     /**

@@ -10,11 +10,14 @@ use pocketmine\plugin\PluginBase;
 use pup\customenchants\commands\EnchanterComand;
 use pup\customenchants\items\ItemListener;
 use pup\customenchants\utils\Rarity;
+use pup\placeholderapi\PlaceholderApi;
 
 
 class Main extends PluginBase
 {
     private static self $instance;
+    private EnchantManager $enchantManager;
+    private MessageService $messages;
 
     public static function getInstance()
     : Main
@@ -43,13 +46,26 @@ class Main extends PluginBase
         }
 
         $this->saveResource("enchantments.json");
+        $this->saveResource("items.json");
         $this->saveDefaultConfig();
         Rarity::init($this->getConfig()->get("rarities"));
+        PlaceholderApi::initialize();
+        $this->messages = new MessageService($this->getConfig()->get('messages', []));
+        $this->enchantManager = new EnchantManager($this);
 
         $this->getServer()->getPluginManager()->registerEvents(new EnchantListener(), $this);
         $this->getServer()->getPluginManager()->registerEvents(new ItemListener(), $this);
         $this->getServer()->getCommandMap()->register("CustomEnchants", new EnchanterComand($this));
 
-        new EnchantManager();
+    }
+
+    public function getEnchantManager(): EnchantManager
+    {
+        return $this->enchantManager;
+    }
+
+    public function getMessages(): MessageService
+    {
+        return $this->messages;
     }
 }

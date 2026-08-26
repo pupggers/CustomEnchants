@@ -1,8 +1,6 @@
 <?php
 
-
 namespace pup\customenchants;
-
 
 use pocketmine\data\bedrock\EnchantmentIdMap;
 use pocketmine\item\Armor;
@@ -10,338 +8,223 @@ use pocketmine\item\Axe;
 use pocketmine\item\Bow;
 use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\ItemFlags;
+use pocketmine\inventory\ArmorInventory;
 use pocketmine\item\Hoe;
 use pocketmine\item\Item;
-use pup\customenchants\enchants\armor\{boots\BunnyEnchant,
-    boots\GearsEnchant,
-    helmet\GlowingEnchant,
-    OverloadEnchant};
-use pup\customenchants\enchants\sword\{AronistEnchant, BlindEnchant, DazeEnchant, ZuesEnchant};
 use pocketmine\item\Pickaxe;
 use pocketmine\item\Shovel;
 use pocketmine\item\Sword;
 use pocketmine\item\Tool;
-use pocketmine\item\VanillaItems;
 use pocketmine\lang\Translatable;
-use pocketmine\utils\TextFormat;
+use pup\customenchants\enchants\armor\OverloadEnchant;
+use pup\customenchants\enchants\armor\ShuffleEnchant;
+use pup\customenchants\enchants\armor\boots\BunnyEnchant;
+use pup\customenchants\enchants\armor\boots\GearsEnchant;
+use pup\customenchants\enchants\armor\boots\TakeOffEnchant;
+use pup\customenchants\enchants\armor\helmet\AquaticEnchant;
+use pup\customenchants\enchants\armor\helmet\GlowingEnchant;
 use pup\customenchants\enchants\bow\TeleportEnchant;
+use pup\customenchants\enchants\sword\AronistEnchant;
+use pup\customenchants\enchants\sword\BlindEnchant;
+use pup\customenchants\enchants\sword\DazeEnchant;
+use pup\customenchants\enchants\sword\ZuesEnchant;
+use pup\customenchants\enchants\tools\ExperienceEnchant;
+use pup\customenchants\enchants\tools\RestoreEnchant;
 use pup\customenchants\enchants\tools\hoe\SpeedEnchant;
-use pup\customenchants\enchants\tools\pickaxe\{DrillEnchant, FeedEnchant, HasteEnchant};
+use pup\customenchants\enchants\tools\pickaxe\AutoSmeltEnchant;
+use pup\customenchants\enchants\tools\pickaxe\DrillEnchant;
+use pup\customenchants\enchants\tools\pickaxe\FeedEnchant;
+use pup\customenchants\enchants\tools\pickaxe\HasteEnchant;
 use pup\customenchants\items\ItemRegistry;
-use pup\customenchants\types\WeaponEnchant;
 use pup\customenchants\utils\Rarity;
 use RuntimeException;
 
 final class EnchantManager
 {
-    public const  IDS = [
-        //Start this at 1k cus wtf bedrock!
-        //Seems 1k is too much?
-        'feed'     => 1000,
-        'haste'    => 1001,
-        'drill'    => 1002,
-        'speed'    => 1003,
-        'zues'     => 1004,
-        'daze'     => 1005,
-        'blind'    => 1006,
-        'aronist'  => 1007,
-        'teleport' => 1008,
-        'overload' => 1009,
-        'glowing'  => 1010,
-        'gears'    => 1011,
-        'bunny'    => 1012
+    private const array DEFINITIONS = [
+        'feed' => ['id' => 1000, 'class' => FeedEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
+        'haste' => ['id' => 1001, 'class' => HasteEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
+        'drill' => ['id' => 1002, 'class' => DrillEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
+        'speed' => ['id' => 1003, 'class' => SpeedEnchant::class, 'flags' => [ItemFlags::HOE, ItemFlags::PICKAXE]],
+        'zues' => ['id' => 1004, 'class' => ZuesEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
+        'daze' => ['id' => 1005, 'class' => DazeEnchant::class, 'flags' => [ItemFlags::SWORD]],
+        'blind' => ['id' => 1006, 'class' => BlindEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
+        'aronist' => ['id' => 1007, 'class' => AronistEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
+        'teleport' => ['id' => 1008, 'class' => TeleportEnchant::class, 'flags' => [ItemFlags::BOW]],
+        'overload' => ['id' => 1009, 'class' => OverloadEnchant::class, 'flags' => [ItemFlags::ARMOR]],
+        'glowing' => ['id' => 1010, 'class' => GlowingEnchant::class, 'flags' => [ItemFlags::HEAD]],
+        'gears' => ['id' => 1011, 'class' => GearsEnchant::class, 'flags' => [ItemFlags::FEET]],
+        'bunny' => ['id' => 1012, 'class' => BunnyEnchant::class, 'flags' => [ItemFlags::FEET]],
+        'restore' => ['id' => 1013, 'class' => RestoreEnchant::class, 'flags' => [ItemFlags::DIG]],
+        'shuffle' => ['id' => 1014, 'class' => ShuffleEnchant::class, 'flags' => [ItemFlags::ARMOR]],
+        'takeoff' => ['id' => 1015, 'class' => TakeOffEnchant::class, 'flags' => [ItemFlags::FEET]],
+        'aquatic' => ['id' => 1016, 'class' => AquaticEnchant::class, 'flags' => [ItemFlags::HEAD]],
+        'autosmelt' => ['id' => 1017, 'class' => AutoSmeltEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
+        'experience' => ['id' => 1018, 'class' => ExperienceEnchant::class, 'flags' => [ItemFlags::DIG]],
     ];
 
-    private static array $class_map = [
-        'feed' => ['class' => FeedEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
-        'drill' => ['class' => DrillEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
-        'haste' => ['class' => HasteEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
-        'speed' => ['class' => SpeedEnchant::class, 'flags' => [ItemFlags::HOE, ItemFlags::PICKAXE]],
-        'teleport' => ['class' => TeleportEnchant::class, 'flags' => [ItemFlags::BOW]],
-        'bunny' => ['class' => BunnyEnchant::class, 'flags' => [ItemFlags::FEET]],
-        'gears' => ['class' => GearsEnchant::class, 'flags' => [ItemFlags::FEET]],
-        'glowing' => ['class' => GlowingEnchant::class, 'flags' => [ItemFlags::HEAD]],
-        'overload' => ['class' => OverloadEnchant::class, 'flags' => [ItemFlags::ARMOR]],
-        'aronist' => ['class' => AronistEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
-        'blind' => ['class' => BlindEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
-        'daze' => ['class' => DazeEnchant::class, 'flags' => [ItemFlags::SWORD]],
-        'zues' => ['class' => ZuesEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
-    ];
+    private array $data;
+    /** @var array<string, Enchantment> */
+    private array $registered = [];
 
-    private array $enchant_data;
-
-    public function __construct()
+    public function __construct(private readonly Main $plugin)
     {
-        $this->enchant_data = json_decode(file_get_contents(Main::getInstance()->getDataFolder() . "enchantments.json"), true);
-        $this->initEnchants();
+        $this->data = $this->loadData();
+        $this->registerEnchants();
         ItemRegistry::init();
+        EnchantPlaceholders::register($this);
     }
 
-    public function initEnchants(): void
+    /** @return array<string, array<string, mixed>> */
+    private function loadData(): array
     {
-        $enchantmentsFile = Main::getInstance()->getDataFolder() . "enchantments.json";
-        $enchantmentsData = json_decode(file_get_contents($enchantmentsFile), true) ?? [];
-        $updated = false;
+        $path = $this->plugin->getDataFolder() . 'enchantments.json';
+        $decoded = json_decode((string) file_get_contents($path), true);
+        if (!is_array($decoded)) {
+            throw new RuntimeException('Could not read enchantments.json: it must contain a JSON object.');
+        }
+        $changed = false;
+        if (isset($decoded['aronsit']) && !isset($decoded['aronist'])) {
+            $decoded['aronist'] = $decoded['aronsit'];
+            unset($decoded['aronsit']);
+            $changed = true;
+        }
+        foreach (self::DEFINITIONS as $key => $_definition) {
+            if (!isset($decoded[$key])) {
+                $decoded[$key] = $this->defaultData($key);
+                $changed = true;
+            }
+        }
+        if ($changed) {
+            file_put_contents($path, json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+        }
+        return $decoded;
+    }
 
-        foreach (self::IDS as $name => $id) {
+    /** @return array<string, mixed> */
+    private function defaultData(string $key): array
+    {
+        return ['enabled' => true, 'display_name' => ucwords(str_replace('_', ' ', $key)), 'description' => 'Configure this enchantment before enabling it.', 'rarity' => 'COMMON', 'max_level' => 1, 'has_chance' => false, 'chance' => 0.1];
+    }
+
+    private function registerEnchants(): void
+    {
+        foreach (self::DEFINITIONS as $key => $definition) {
+            $data = $this->data[$key];
+            if (($data['enabled'] ?? true) !== true) {
+                continue;
+            }
             try {
-                if (!isset($enchantmentsData[$name])) {
-                    $enchantmentsData[$name] = $this->createDefaultEnchantmentData($name);
-                    $updated = true;
-                    Main::getInstance()->getLogger()->info("Added missing enchantment data for $name");
+                $class = $definition['class'];
+                $enchant = new $class((string) ($data['display_name'] ?? $key), Rarity::fromName((string) ($data['rarity'] ?? 'COMMON')), (string) ($data['description'] ?? ''), max(1, (int) ($data['max_level'] ?? 1)), ...$definition['flags']);
+                if (($data['has_chance'] ?? false) === true) {
+                    $enchant->setBaseChance((float) ($data['chance'] ?? $data['base_chance'] ?? 0.1));
                 }
-
-                if ($enchant = $this->createConfiguredEnchant($name)) {
-                    EnchantmentIdMap::getInstance()->register($id, $enchant);
-                    Main::getInstance()->getLogger()->info("Registered {$enchant->getName()}");
-                }
-            } catch (RuntimeException $e) {
-                Main::getInstance()->getLogger()->error($e->getMessage());
+                EnchantmentIdMap::getInstance()->register($definition['id'], $enchant);
+                $this->registered[$key] = $enchant;
+                $this->plugin->getLogger()->info("Registered {$enchant->getName()} ($key)");
+            } catch (RuntimeException $exception) {
+                $this->plugin->getLogger()->error("Could not register $key: {$exception->getMessage()}");
             }
         }
-
-        if ($updated) {
-            file_put_contents($enchantmentsFile, json_encode($enchantmentsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-            $this->enchant_data = $enchantmentsData;
-        }
     }
 
-    private function createDefaultEnchantmentData(string $name): array
+    public static function normalizeKey(string $key): string
     {
-        $mapping = self::$class_map[$name] ?? [];
-
-        return [
-            'enabled' => true,
-            'display_name' => ucfirst($name),
-            'description' => 'Auto-generated enchantment (Please change!)',
-            'rarity' => 'COMMON',
-            'max_level' => 1,
-            'has_chance' => false,
-            'base_chance' => 0.1,
-            //Add => ? 'flags' => $mapping['flags'] ?? []
-        ];
+        return strtolower(str_replace([' ', '-'], '', $key));
     }
 
-    private function createConfiguredEnchant(string $name): CustomEnchant|WeaponEnchant|null
+    public function getByKey(string $key): ?Enchantment
     {
-        $data = $this->enchant_data[$name] ?? $this->createDefaultEnchantmentData($name);
-
-        $mapping = self::$class_map[$name] ?? null;
-
-        if (!$mapping) {
-            throw new RuntimeException("Unknown enchant type or missing mapping: $name");
-        }
-
-        $className = $mapping['class'];
-        $flags = $mapping['flags'] ?? [];
-        if (!class_exists($className)) {
-            throw new RuntimeException("Enchant class not found: $className for enchant type: $name");
-        }
-
-        $constructorArgs = [
-            $data['display_name'] ?? $name,
-            Rarity::fromName($data['rarity']),
-            $data['description'] ?? '',
-            $data['max_level'] ?? 1,
-            ...$flags
-        ];
-
-        $enchant = new $className(...$constructorArgs);
-
-        //Chance is on the enchant whether the base chance is set.
-        if ($data['has_chance'] ?? false) {
-            $enchant->setBaseChance($data['base_chance'] ?? 0.1);
-        }
-
-        return $enchant;
+        return $this->registered[self::normalizeKey($key)] ?? null;
     }
 
-    public static function loreItem(Item $item): Item
+    public function getIdByKey(string $key): ?int
     {
-        //TODO: Update Lores
-        if ($item->getNamedTag()->getTag("hideEnchantments") !== null) {
-            return $item;
-        }
-
-        $config = Main::getInstance()->getConfig();
-        $enchantLore = [];
-        $currentLore = $item->getLore();
-
-        foreach ($item->getEnchantments() as $enchantmentInstance) {
-            $enchantment = $enchantmentInstance->getType();
-
-            $rarity = $enchantment->getRarity();
-            $color = Rarity::getColor($rarity);
-            $level = $enchantmentInstance->getLevel();
-            $name = $enchantment->getName();
-            if($name instanceof Translatable){
-                $name = $name->getText();
-            }
-
-            $levelDisplay = $config->getNested('enchant_lore.roman_numerals', true)
-                ? self::intToRoman($level)
-                : $level;
-
-            $entry = TextFormat::colorize(str_replace(
-                ['{color}', '{name}', '{level}'],
-                [$color, $name, $levelDisplay],
-                $config->getNested('enchant_lore.entry_format', "&r&8» &r{color}{name} {level}")
-            ));
-
-            $enchantLore[$entry] = $rarity;
-        }
-
-        if ($config->getNested('enchant_lore.sort_by_rarity', true) && !empty($enchantLore)) {
-            asort($enchantLore);
-            $enchantLore = array_keys($enchantLore);
-        }
-
-        $newLore = [];
-        if (!empty($enchantLore)) {
-            $header = TextFormat::colorize($config->getNested('enchant_lore.header', "&r&dEnchantments:"));
-            array_unshift($enchantLore, $header);
-            $newLore = $enchantLore;
-        }
-
-        $finalLore = array_merge($currentLore, $newLore);
-
-        $finalLore = array_filter($finalLore, function($line) {
-            return is_string($line) && trim($line) !== '';
-        });
-
-        $item->setLore(array_values($finalLore));
-        return $item;
+        return self::DEFINITIONS[self::normalizeKey($key)]['id'] ?? null;
     }
-    public static function intToRoman($number): string
+
+    /** @return array<string, Enchantment> */
+    public function getEnabled(): array
     {
-        $map = array('M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400, 'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40, 'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1);
-        $returnValue = '';
-        while ($number > 0) {
-            foreach ($map as $roman => $int) {
-                if ($number >= $int) {
-                    $number -= $int;
-                    $returnValue .= $roman;
-                    break;
-                }
-            }
-        }
-        return $returnValue;
+        return $this->registered;
     }
 
-    private static function getItemTypeFlags(Item $item) : int {
-        if($item instanceof Sword) {
-            return ItemFlags::SWORD;
-        }
-        if($item instanceof Bow) {
-            return ItemFlags::BOW;
-        }
-        if($item instanceof Pickaxe) {
-            return ItemFlags::PICKAXE;
-        }
-        if($item instanceof Axe) {
-            return ItemFlags::AXE;
-        }
-        if($item instanceof Shovel) {
-            return ItemFlags::SHOVEL;
-        }
-        if($item instanceof Hoe) {
-            return ItemFlags::HOE;
-        }
-        if($item instanceof Tool) {
-            return ItemFlags::DIG;
-        }
-
-        if ($item instanceof Armor) {
-                $itemTypeId = $item->getTypeId();
-                // Helmets
-                if(in_array($itemTypeId, [
-                    VanillaItems::LEATHER_CAP()->getTypeId(),
-                    VanillaItems::GOLDEN_HELMET()->getTypeId(),
-                    VanillaItems::CHAINMAIL_HELMET()->getTypeId(),
-                    VanillaItems::IRON_HELMET()->getTypeId(),
-                    VanillaItems::DIAMOND_HELMET()->getTypeId(),
-                    VanillaItems::NETHERITE_HELMET()->getTypeId()
-                ])) {
-                    return ItemFlags::HEAD;
-                }
-                // Chestplates
-                if(in_array($itemTypeId, [
-                    VanillaItems::LEATHER_TUNIC()->getTypeId(),
-                    VanillaItems::GOLDEN_CHESTPLATE()->getTypeId(),
-                    VanillaItems::CHAINMAIL_CHESTPLATE()->getTypeId(),
-                    VanillaItems::IRON_CHESTPLATE()->getTypeId(),
-                    VanillaItems::DIAMOND_CHESTPLATE()->getTypeId(),
-                    VanillaItems::NETHERITE_CHESTPLATE()->getTypeId()
-                ])) {
-                    return ItemFlags::TORSO;
-                }
-                // Leggings
-                if(in_array($itemTypeId, [
-                    VanillaItems::LEATHER_PANTS()->getTypeId(),
-                    VanillaItems::GOLDEN_LEGGINGS()->getTypeId(),
-                    VanillaItems::CHAINMAIL_LEGGINGS()->getTypeId(),
-                    VanillaItems::IRON_LEGGINGS()->getTypeId(),
-                    VanillaItems::DIAMOND_LEGGINGS()->getTypeId(),
-                    VanillaItems::NETHERITE_LEGGINGS()->getTypeId()
-                ])) {
-                    return ItemFlags::LEGS;
-                }
-                // Boots
-                if(in_array($itemTypeId, [
-                    VanillaItems::LEATHER_BOOTS()->getTypeId(),
-                    VanillaItems::GOLDEN_BOOTS()->getTypeId(),
-                    VanillaItems::CHAINMAIL_BOOTS()->getTypeId(),
-                    VanillaItems::IRON_BOOTS()->getTypeId(),
-                    VanillaItems::DIAMOND_BOOTS()->getTypeId(),
-                    VanillaItems::NETHERITE_BOOTS()->getTypeId()
-                ])) {
-                    return ItemFlags::FEET;
-                }
-        }
-
-        return ItemFlags::NONE;
-    }
-
-    public static function canApplyEnchant(string $enchantName, Item $item): bool {
-        $enchantName = strtolower(str_replace(" ", "", $enchantName));
-        $mapping = self::$class_map[$enchantName] ?? null;
-        if ($mapping === null) {
+    public function canApply(string $key, Item $item): bool
+    {
+        $definition = self::DEFINITIONS[self::normalizeKey($key)] ?? null;
+        if ($definition === null || $this->getByKey($key) === null) {
             return false;
         }
-
-        $requiredFlags = $mapping['flags'] ?? [];
-        if (empty($requiredFlags)) {
-            return true;
-        }
-
-        $itemTypeFlags = self::getItemTypeFlags($item);
-
-        if ($item instanceof Armor) {
-            foreach ($requiredFlags as $requiredFlag) {
-                if ($requiredFlag === $itemTypeFlags) {
-                    return true;
-                }
-            }
-        }
-
-        foreach ($requiredFlags as $requiredFlag) {
-            if (($itemTypeFlags & $requiredFlag) !== 0) {
+        $itemFlags = self::getItemFlags($item);
+        foreach ($definition['flags'] as $flag) {
+            if (($itemFlags & $flag) !== 0) {
                 return true;
             }
         }
-
         return false;
     }
 
-    public static function nameToId(string $name)
-    : int
+    private static function getItemFlags(Item $item): int
     {
-        return self::IDS[strtolower($name)] ?? -1;
+        return match (true) {
+            $item instanceof Sword => ItemFlags::SWORD,
+            $item instanceof Bow => ItemFlags::BOW,
+            $item instanceof Pickaxe => ItemFlags::PICKAXE,
+            $item instanceof Axe => ItemFlags::AXE,
+            $item instanceof Shovel => ItemFlags::SHOVEL,
+            $item instanceof Hoe => ItemFlags::HOE,
+            $item instanceof Tool => ItemFlags::DIG,
+            $item instanceof Armor => match ($item->getArmorSlot()) {
+                ArmorInventory::SLOT_HEAD => ItemFlags::HEAD,
+                ArmorInventory::SLOT_CHEST => ItemFlags::TORSO,
+                ArmorInventory::SLOT_LEGS => ItemFlags::LEGS,
+                ArmorInventory::SLOT_FEET => ItemFlags::FEET,
+                default => ItemFlags::ARMOR,
+            },
+            default => ItemFlags::NONE,
+        };
     }
 
-    public static function idToEnchant(int $id)
-    : ?Enchantment
+    public function rebuildLore(Item $item): Item
     {
-        return EnchantmentIdMap::getInstance()->fromId($id);
+        if ($item->getNamedTag()->getTag('hideEnchantments') !== null) {
+            return $item;
+        }
+        $oldGenerated = json_decode($item->getNamedTag()->getString('custom_enchants_lore', '[]'), true);
+        $oldGenerated = is_array($oldGenerated) ? $oldGenerated : [];
+        $lore = array_values(array_filter($item->getLore(), fn(string $line): bool => !in_array($line, $oldGenerated, true)));
+        $generated = [];
+        foreach ($item->getEnchantments() as $instance) {
+            $enchant = $instance->getType();
+            if (!$enchant instanceof CustomEnchant && !$enchant instanceof \pup\customenchants\types\WeaponEnchant) {
+                continue;
+            }
+            $name = $enchant->getName();
+            $name = $name instanceof Translatable ? $name->getText() : $name;
+            $level = $instance->getLevel();
+            $generated[] = $this->plugin->getMessages()->format((string) $this->plugin->getConfig()->getNested('enchant_lore.entry_format', '&r&8» &r{color}{name} {level}'), null, ['color' => Rarity::getColor($enchant->getRarity()), 'name' => $name, 'level' => $this->plugin->getConfig()->getNested('enchant_lore.roman_numerals', true) ? self::intToRoman($level) : $level]);
+        }
+        if ($generated !== []) {
+            sort($generated, SORT_NATURAL | SORT_FLAG_CASE);
+            array_unshift($generated, $this->plugin->getMessages()->format((string) $this->plugin->getConfig()->getNested('enchant_lore.header', '&r&dEnchantments:')));
+            $lore = [...$lore, ...$generated];
+        }
+        $item->getNamedTag()->setString('custom_enchants_lore', json_encode($generated, JSON_UNESCAPED_UNICODE));
+        $item->setLore($lore);
+        return $item;
+    }
+
+    public static function intToRoman(int $number): string
+    {
+        $map = ['M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400, 'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40, 'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1];
+        $result = '';
+        foreach ($map as $roman => $value) {
+            while ($number >= $value) {
+                $result .= $roman;
+                $number -= $value;
+            }
+        }
+        return $result;
     }
 }

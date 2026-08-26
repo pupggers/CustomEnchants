@@ -6,11 +6,7 @@ use CortexPE\Commando\args\RawStringArgument;
 use CortexPE\Commando\BaseSubCommand;
 use CortexPE\Commando\exception\ArgumentOrderException;
 use pocketmine\command\CommandSender;
-use pocketmine\data\bedrock\EnchantmentIdMap;
-use pocketmine\item\enchantment\Enchantment;
 use pocketmine\player\Player;
-use pocketmine\utils\TextFormat;
-use pup\customenchants\EnchantManager;
 use pup\customenchants\Main;
 
 final class RemoveEnchantSub extends BaseSubCommand
@@ -37,29 +33,24 @@ final class RemoveEnchantSub extends BaseSubCommand
         if(!$sender instanceof Player) return;
 
         if(isset($args['enchant'])) {
-            if(!isset(EnchantManager::IDS[$args['enchant']])) {
-                $sender->sendMessage(TextFormat::RED . "Invalid enchantment name.");
-            }
-            $enchant  = EnchantManager::IDS[$args['enchant']];
-
-            $enchant = EnchantmentIdMap::getInstance()->fromId($enchant);
-
-            if(!$enchant instanceof Enchantment){
-                $sender->sendMessage(TextFormat::RED . "Invalid enchantment.");
+            $manager = $this->main->getEnchantManager();
+            $enchant = $manager->getByKey($args['enchant']);
+            if($enchant === null){
+                $this->main->getMessages()->send($sender, 'invalid_enchantment');
                 return;
             }
 
             $item = $sender->getInventory()->getItemInHand();
 
             if($item->isNull()){
-                $sender->sendMessage(TextFormat::RED . "Item is null.");
+                $this->main->getMessages()->send($sender, 'item_null');
                 return;
             }
 
             $item->removeEnchantment($enchant);
-            $item = EnchantManager::loreItem($item);
+            $item = $manager->rebuildLore($item);
             $sender->getInventory()->setItemInHand($item);
-            $sender->sendMessage(TextFormat::GREEN . "Successfully removed " . $enchant->getName() . "!");
+            $this->main->getMessages()->send($sender, 'enchant_removed', ['key' => $args['enchant']]);
         }
     }
 }

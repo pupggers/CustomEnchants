@@ -11,12 +11,17 @@ use pocketmine\math\Axis;
 use pocketmine\math\Facing;
 use pocketmine\player\Player;
 use pup\customenchants\types\ToolEnchant;
+use Random\RandomException;
 
 class DrillEnchant extends ToolEnchant
 {
+    //This was stolen lmao
     private static array $lastBreakFace = [];
     private bool $breakingBlocks = false;
 
+    /**
+     * @throws RandomException
+     */
     public function execute(Player $player, Item $item, Block $block, ?Event $event)
     : void
     {

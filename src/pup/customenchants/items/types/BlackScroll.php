@@ -10,15 +10,16 @@ use pocketmine\item\Durable;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\player\Player;
-use pocketmine\utils\TextFormat;
+use pup\customenchants\Main;
 use pup\customenchants\items\CustomItem;
+use pup\customenchants\items\ItemRegistry;
 use pup\customenchants\items\interface\InventoryTransactionInterface;
 use Random\RandomException;
 
 final class BlackScroll extends CustomItem implements InventoryTransactionInterface
 {
-    private const MIN_CHANCE = 1;
-    private const MAX_CHANCE = 100;
+    private const int MIN_CHANCE = 1;
+    private const int MAX_CHANCE = 100;
 
     public function __construct(private int $chance = 50)
     {
@@ -33,17 +34,7 @@ final class BlackScroll extends CustomItem implements InventoryTransactionInterf
             ->setInt("chance", $chance)
             ->setString(self::CUSTOM_ITEM_ID, "black_scroll");
 
-        parent::__construct(
-            "black_scroll",
-            TextFormat::DARK_GRAY . "Black Scroll",
-            [
-                "Removes a random enchantment",
-                "from an item with {$chance}% success rate",
-                "",
-                TextFormat::DARK_GRAY . "Right-click on an item to use"
-            ],
-            $item
-        );
+        parent::__construct('black_scroll', ItemRegistry::getName('black_scroll', 'Black Scroll', ['chance' => $chance]), ItemRegistry::getLore('black_scroll', ['Removes a random enchantment'], ['chance' => $chance]), $item);
     }
 
     /**
@@ -83,14 +74,14 @@ final class BlackScroll extends CustomItem implements InventoryTransactionInterf
         }
 
         if (!$targetItem instanceof Durable) {
-            $player->sendMessage(TextFormat::RED . "Only durable items can be modified with a Black Scroll");
+            Main::getInstance()->getMessages()->send($player, 'black_scroll_durable_only');
             $e->cancel();
             return;
         }
 
         $enchantments = $targetItem->getEnchantments();
         if (count($enchantments) === 0) {
-            $player->sendMessage(TextFormat::RED . "The item has no enchantments to remove");
+            Main::getInstance()->getMessages()->send($player, 'black_scroll_no_enchants');
             $e->cancel();
             return;
         }
@@ -101,9 +92,10 @@ final class BlackScroll extends CustomItem implements InventoryTransactionInterf
 
         if (random_int(1, 100) <= $chance) {
             $targetItem->removeEnchantment($enchantmentToRemove->getType());
-            $player->sendMessage(TextFormat::GREEN . "Successfully removed an enchantment!");
+            $targetItem = Main::getInstance()->getEnchantManager()->rebuildLore($targetItem);
+            Main::getInstance()->getMessages()->send($player, 'black_scroll_success');
         } else {
-            $player->sendMessage(TextFormat::RED . "Failed to remove an enchantment!");
+            Main::getInstance()->getMessages()->send($player, 'black_scroll_failure');
         }
 
         $scroll->pop();

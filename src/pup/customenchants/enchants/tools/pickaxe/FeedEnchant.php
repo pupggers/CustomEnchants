@@ -8,10 +8,14 @@ use pocketmine\event\Event;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
 use pup\customenchants\types\ToolEnchant;
+use Random\RandomException;
 
 class FeedEnchant extends ToolEnchant
 {
 
+    /**
+     * @throws RandomException
+     */
     public function execute(Player $player, Item $item, Block $block, ?Event $event)
     : void
     {

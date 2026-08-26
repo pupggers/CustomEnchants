@@ -7,7 +7,7 @@ use pocketmine\utils\TextFormat;
 
 abstract class CustomItem
 {
-    protected const CUSTOM_ITEM_ID = "customItem";
+    protected const string CUSTOM_ITEM_ID = "customItem";
     public function __construct(
         private readonly string $id,
         private readonly string $name,
@@ -18,7 +18,7 @@ abstract class CustomItem
         $this->item->setCustomName(TextFormat::RESET . $this->name);
 
         $formattedDescription = array_map(
-            fn(string $line) => TextFormat::RESET . TextFormat::GRAY . $line,
+            fn(string $line) => TextFormat::RESET . $line,
             $this->description
         );
 

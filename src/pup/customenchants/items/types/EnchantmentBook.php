@@ -10,12 +10,12 @@ use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\player\Player;
-use pocketmine\utils\TextFormat;
 use pocketmine\world\sound\AnvilFallSound;
 use pocketmine\world\sound\AnvilUseSound;
 use pup\customenchants\CustomEnchant;
-use pup\customenchants\EnchantManager;
+use pup\customenchants\Main;
 use pup\customenchants\items\CustomItem;
+use pup\customenchants\items\ItemRegistry;
 use pup\customenchants\items\interface\InventoryTransactionInterface;
 use pup\customenchants\utils\Rarity;
 
@@ -30,26 +30,10 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
             ->setInt("level", $level)
             ->setString("uid", uniqid());
 
-        if($enchantment instanceof CustomEnchant){
-            $color = Rarity::getColor($enchantment->getRarity());
-            $name = $color . $enchantment->getName();
-        } else {
-            $name = $enchantment->getName();
-        }
+        $name = $enchantment->getName();
 
-        parent::__construct(
-            "enchantment_book",
-            $name . " " . $level,
-            [
-                "Right-click on an item to enchant it",
-                "Combine two books to increase the level of an enchantment",
-                "",
-                TextFormat::DARK_GRAY . "Right-click on an item to use",
-                "",
-                Rarity::getColor($enchantment->getRarity()) . "Rarity: " . Rarity::getName($enchantment->getRarity())
-            ],
-            $item
-        );
+        $replacements = ['rarity_color' => Rarity::getColor($enchantment->getRarity()), 'rarity_name' => Rarity::getName($enchantment->getRarity()), 'enchant_name' => $name, 'level' => $level];
+        parent::__construct('enchantment_book', ItemRegistry::getName('enchantment_book', '{enchant_name} {level}', $replacements), ItemRegistry::getLore('enchantment_book', ['Combine with an item to use'], $replacements), $item);
     }
 
     public function onInventoryTransaction(InventoryTransactionEvent $e, Player $player, Item $item, Item $target, SlotChangeAction $action1, SlotChangeAction $action2)
@@ -84,12 +68,18 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
             $targetLevel = $targetItem->getNamedTag()->getInt("level");
 
             if ($bookEnchantName === $targetEnchantName && $bookLevel === $targetLevel) {
-                $maxLevel = EnchantManager::idToEnchant(EnchantManager::nameToId($bookEnchantName))?->getMaxLevel() ?? 1;
+                $manager = Main::getInstance()->getEnchantManager();
+                $enchant = $manager->getByKey($bookEnchantName);
+                $maxLevel = $enchant?->getMaxLevel() ?? 1;
 
                 if ($bookLevel < $maxLevel) {
                     $newLevel = $bookLevel + 1;
 
-                    $newBook = new self(EnchantManager::idToEnchant(EnchantManager::nameToId($bookEnchantName)), $newLevel);
+                    if ($enchant === null) {
+                        $e->cancel();
+                        return;
+                    }
+                    $newBook = new self($enchant, $newLevel);
 
                     $book->pop();
                     $targetItem->pop();
@@ -99,11 +89,11 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
 
                     $player->getWorld()->addSound($player->getLocation(), new AnvilUseSound());
                 } else {
-                    $player->sendMessage(TextFormat::RED . "This enchantment is already at its maximum level!");
+                    Main::getInstance()->getMessages()->send($player, 'book_max_level');
                     $player->getWorld()->addSound($player->getLocation(), new AnvilFallSound());
                 }
             } else {
-                $player->sendMessage(TextFormat::RED . "You can only combine books with the same enchantment and level!");
+                Main::getInstance()->getMessages()->send($player, 'book_combine_mismatch');
                 $player->getWorld()->addSound($player->getLocation(), new AnvilFallSound());
             }
             $e->cancel();
@@ -111,34 +101,35 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
         }
 
         if (!$targetItem instanceof Durable) {
-            $player->sendMessage(TextFormat::RED . "You can only enchant durable items!");
+            Main::getInstance()->getMessages()->send($player, 'durable_items_only');
             $player->getWorld()->addSound($player->getLocation(), new AnvilFallSound());
             $e->cancel();
             return;
         }
 
-        if (EnchantManager::canApplyEnchant($bookEnchantName, $targetItem)) {
-            $enchant = EnchantManager::idToEnchant(EnchantManager::nameToId($bookEnchantName));
+        $manager = Main::getInstance()->getEnchantManager();
+        if ($manager->canApply($bookEnchantName, $targetItem)) {
+            $enchant = $manager->getByKey($bookEnchantName);
             if ($enchant !== null) {
                 $existingEnchant = $targetItem->getEnchantment($enchant);
                 if ($existingEnchant !== null) {
                     $maxLevel = $enchant->getMaxLevel();
                     if ($existingEnchant->getLevel() >= $bookLevel) {
-                        $player->sendMessage(TextFormat::RED . "The item already has this enchantment at an equal or higher level!");
+                        Main::getInstance()->getMessages()->send($player, 'item_has_equal_or_higher');
                         $player->getWorld()->addSound($player->getLocation(), new AnvilFallSound());
                         $e->cancel();
                         return;
                     }
                     if ($existingEnchant->getLevel() >= $maxLevel) {
                         $player->getWorld()->addSound($player->getLocation(), new AnvilFallSound());
-                        $player->sendMessage(TextFormat::RED . "This enchantment is already at its maximum level on this item!");
+                        Main::getInstance()->getMessages()->send($player, 'item_enchant_max_level');
                         $e->cancel();
                         return;
                     }
                 }
 
                 $targetItem->addEnchantment(new EnchantmentInstance($enchant, $bookLevel));
-                EnchantManager::loreItem($targetItem);
+                $targetItem = $manager->rebuildLore($targetItem);
 
                 $book->pop();
                 $bookAction->getInventory()->setItem($bookAction->getSlot(), $book->getCount() > 0 ? $book : VanillaItems::AIR());
@@ -150,7 +141,7 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
             }
         }
 
-        $player->sendMessage(TextFormat::RED . "This enchantment cannot be applied to this item!");
+        Main::getInstance()->getMessages()->send($player, 'cannot_apply');
         $e->cancel();
     }
 

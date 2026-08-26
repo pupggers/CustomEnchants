@@ -73,9 +73,9 @@
     "max_level": 3,
     "has_chance": false
   },
-  "aronsit": {
+  "aronist": {
     "enabled": true,
-    "display_name": "Aronsit",
+    "display_name": "Aronist",
     "description": "Deals extra damage while enemy is on fire",
     "rarity": "RARE",
     "max_level": 3,

@@ -7,8 +7,8 @@ use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\item\enchantment\VanillaEnchantments;
-use pocketmine\utils\TextFormat;
 use pup\customenchants\EnchantManager;
+use pup\customenchants\Main;
 use pup\customenchants\items\interface\InventoryTransactionInterface;
 use pup\customenchants\items\interface\ItemInteractInterface;
 use pup\customenchants\items\types\EnchantBook;
@@ -55,7 +55,7 @@ final class ItemListener implements Listener
                     $enchantLevel = $itemClickedWith->getNamedTag()->getInt("level", 1);
 
                     $customItem = new EnchantmentBook(
-                        EnchantManager::idToEnchant(EnchantManager::nameToId($enchantName)) ?? VanillaEnchantments::PROTECTION(),
+                        Main::getInstance()->getEnchantManager()->getByKey($enchantName) ?? VanillaEnchantments::PROTECTION(),
                         $enchantLevel
                     );
                 } else {
@@ -74,7 +74,7 @@ final class ItemListener implements Listener
                 }
             }
         } catch (Throwable $e) {
-            $player->sendMessage(TextFormat::RED . "An error occurred while processing the item");
+            Main::getInstance()->getMessages()->send($player, 'item_processing_error');
         }
     }
 

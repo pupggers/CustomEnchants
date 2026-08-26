@@ -4,10 +4,12 @@ namespace pup\customenchants\utils;
 
 trait ChanceTrait
 {
-    private float $baseChance = 0.1;
+    /** Stored and returned as a percentage between 0 and 100. */
+    private float $baseChance = 10.0;
 
     public function setBaseChance(float $chance): void {
-        $this->baseChance = max(0, min(1, $chance));
+        // Decimal values preserve the old config convention: 0.1 means 10%.
+        $this->baseChance = max(0, min(100, $chance <= 1 ? $chance * 100 : $chance));
     }
 
     public function getChance(int $currentLevel, int $maxLevel): float {

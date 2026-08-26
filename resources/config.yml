@@ -45,9 +45,31 @@ rarities:
 #         MESSAGES
 # ========================
 messages:
+  invalid_enchantment: "{red}That enchantment is unavailable."
+  item_null: "{red}Hold an item first."
+  level_exceeds_max: "{red}That level exceeds the maximum of {max_level}."
+  cannot_apply: "{red}That enchantment cannot be applied to this item."
+  enchant_applied: "{green}Applied {enchant_name:{key}} {level} to your item."
+  enchant_removed: "{green}Removed {enchant_name:{key}} from your item."
+  tool_repaired: "{green}Your tool has been repaired!"
+  book_max_level: "{red}This enchantment is already at its maximum level."
+  book_combine_mismatch: "{red}You can only combine books with the same enchantment and level."
+  durable_items_only: "{red}You can only enchant durable items."
+  item_has_equal_or_higher: "{red}This item already has that enchantment at an equal or higher level."
+  item_enchant_max_level: "{red}This enchantment is already at its maximum level on this item."
+  no_enchants_for_rarity: "{red}No enabled enchantments are available for this rarity."
+  books_created: "{green}Created {amount} enchantment books!"
+  inventory_full_books: "{red}Your inventory is full; {amount} book(s) were dropped."
+  black_scroll_durable_only: "{red}Only durable items can be modified with a Black Scroll."
+  black_scroll_no_enchants: "{red}That item has no enchantments to remove."
+  black_scroll_success: "{green}Successfully removed an enchantment!"
+  black_scroll_failure: "{red}Failed to remove an enchantment."
+  white_scroll_durable_only: "{red}That item must be durable."
+  white_scroll_protected: "{red}That item is already protected."
+  item_processing_error: "{red}An error occurred while processing that item."
   proc_messages:
     enabled: true
-    format: "§e{enchant_name} §fhas activated! (Level: {level})"
+    format: "§e{enchant_name:{key}} §fhas activated! (Level: {level})"
 # =======================
 #      SETTINGS
 # =======================
@@ -56,4 +78,4 @@ enchant_lore:
   header: "§r§dEnchantments: "  # The header line
   entry_format: " §r§8» §r{color}{name} {level}"  # Format for each enchant
   sort_by_rarity: true  # Whether to sort enchants by rarity
-  roman_numerals: = true # Whether to enable roman numerals as level showcase
+  roman_numerals: true # Whether to enable roman numerals as level showcase

@@ -12,10 +12,14 @@ use pocketmine\player\Player;
 use pocketmine\world\particle\SmokeParticle;
 use pocketmine\world\sound\FurnaceSound;
 use pup\customenchants\types\ToolEnchant;
+use Random\RandomException;
 
 class AutoSmeltEnchant extends ToolEnchant
 {
 
+    /**
+     * @throws RandomException
+     */
     public function execute(Player $player, Item $item, Block $block, ?Event $event): void {
         $furnaceManager = $player->getServer()->getCraftingManager()->getFurnaceRecipeManager(FurnaceType::FURNACE);
         $level = $item->getEnchantment($this)->getLevel();

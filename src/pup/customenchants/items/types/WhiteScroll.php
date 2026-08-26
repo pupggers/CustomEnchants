@@ -8,10 +8,11 @@ use pocketmine\item\Durable;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\player\Player;
-use pocketmine\utils\TextFormat;
 use pocketmine\world\sound\AnvilUseSound;
 use pup\customenchants\items\CustomItem;
+use pup\customenchants\items\ItemRegistry;
 use pup\customenchants\items\interface\InventoryTransactionInterface;
+use pup\customenchants\Main;
 
 final class WhiteScroll extends CustomItem implements InventoryTransactionInterface
 {
@@ -21,17 +22,8 @@ final class WhiteScroll extends CustomItem implements InventoryTransactionInterf
         $item->getNamedTag()
             ->setString("holy_scroll", ($this->holy ? "holy" : "normal"))
             ->setString(self::CUSTOM_ITEM_ID, "white_scroll");
-        parent::__construct(
-            "white_scroll",
-            $this->holy ? TextFormat::GOLD . "Holy Scroll" : TextFormat::WHITE . "White Scroll",
-            [
-                "Protects an item from breaking",
-                "",
-                $this->holy ? TextFormat::GOLD . "Item will be marked as HOLY" : "",
-                TextFormat::DARK_GRAY . "Right-click on an item to use"
-            ],
-            $item
-        );
+        $definition = $this->holy ? 'holy_scroll' : 'white_scroll';
+        parent::__construct('white_scroll', ItemRegistry::getName($definition, 'White Scroll'), ItemRegistry::getLore($definition, ['Protects an item from breaking']), $item);
     }
 
     public function onInventoryTransaction(
@@ -66,13 +58,13 @@ final class WhiteScroll extends CustomItem implements InventoryTransactionInterf
         }
 
         if (!$targetItem instanceof Durable) {
-            $player->sendMessage(TextFormat::RED . "The item is not a Durable");
+            Main::getInstance()->getMessages()->send($player, 'white_scroll_durable_only');
             $e->cancel();
             return;
         }
 
         if ($this->isProtected($targetItem)) {
-            $player->sendMessage(TextFormat::RED . "This item is already protected!");
+            Main::getInstance()->getMessages()->send($player, 'white_scroll_protected');
             $e->cancel();
             return;
         }
@@ -81,10 +73,10 @@ final class WhiteScroll extends CustomItem implements InventoryTransactionInterf
         $lore = $targetItem->getLore();
         if ($this->isHoly($scroll)) {
             $targetItem->getNamedTag()->setString("holy_scroll", "holy");
-            $lore[] = TextFormat::colorize("&r&6&lHOLY PROTECTED");
+            $lore[] = Main::getInstance()->getMessages()->format('{gold}{bold}HOLY PROTECTED');
         } else {
             $targetItem->getNamedTag()->setString("white_scroll", "protected");
-            $lore[] = TextFormat::colorize("&r&f&lPROTECTED");
+            $lore[] = Main::getInstance()->getMessages()->format('{white}{bold}PROTECTED');
         }
 
         $targetItem->setLore($lore);

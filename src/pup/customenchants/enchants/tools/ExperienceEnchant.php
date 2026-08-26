@@ -9,10 +9,14 @@ use pocketmine\event\Event;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
 use pup\customenchants\types\ToolEnchant;
+use Random\RandomException;
 
 class ExperienceEnchant extends ToolEnchant
 {
 
+    /**
+     * @throws RandomException
+     */
     public function execute(Player $player, Item $item, Block $block, ?Event $event)
     : void
     {
@@ -20,7 +24,7 @@ class ExperienceEnchant extends ToolEnchant
         $chance = $this->getChance($level, $this->getMaxLevel());
 
         if(random_int(1, 100) <= $chance){
-            $player->getXpManager()->addXp((random_int(1, 10) * random_int(1, 5)), true);
+            $player->getXpManager()->addXp((random_int(1, 10) * random_int(1, 5)));
         }
     }
 }

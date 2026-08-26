@@ -7,12 +7,8 @@ use CortexPE\Commando\args\RawStringArgument;
 use CortexPE\Commando\BaseSubCommand;
 use CortexPE\Commando\exception\ArgumentOrderException;
 use pocketmine\command\CommandSender;
-use pocketmine\data\bedrock\EnchantmentIdMap;
-use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\player\Player;
-use pocketmine\utils\TextFormat;
-use pup\customenchants\EnchantManager;
 use pup\customenchants\Main;
 
 final class AddEnchantSub extends BaseSubCommand
@@ -39,44 +35,38 @@ final class AddEnchantSub extends BaseSubCommand
         if(!$sender instanceof Player) return;
 
         if(isset($args['enchant'])) {
-            if(!isset(EnchantManager::IDS[$args['enchant']])) {
-                $sender->sendMessage(TextFormat::RED . "Invalid enchantment name.");
-            }
-            $enchant  = EnchantManager::IDS[$args['enchant']];
-
-            $enchant = EnchantmentIdMap::getInstance()->fromId($enchant);
-
-            if(!$enchant instanceof Enchantment){
-                $sender->sendMessage(TextFormat::RED . "Invalid enchantment.");
+            $manager = $this->main->getEnchantManager();
+            $enchant = $manager->getByKey($args['enchant']);
+            if($enchant === null){
+                $this->main->getMessages()->send($sender, 'invalid_enchantment');
                 return;
             }
 
             $item = $sender->getInventory()->getItemInHand();
 
             if($item->isNull()){
-                $sender->sendMessage(TextFormat::RED . "Item is null.");
+                $this->main->getMessages()->send($sender, 'item_null');
                 return;
             }
-
-            $level = $args['level'];
+            $level = $args['level'] ?? 1;
 
             $level = (int)abs($level);
             $config = Main::getInstance()->getConfig();
 
             if ($config->get("max_level", true) && $level > $enchant->getMaxLevel()) {
-                $sender->sendMessage(TextFormat::RED . "Level exceeds max level ({$enchant->getMaxLevel()})!");
+                $this->main->getMessages()->send($sender, 'level_exceeds_max', ['max_level' => $enchant->getMaxLevel()]);
                 return;
             }
 
-            if (!EnchantManager::canApplyEnchant($enchant->getName(), $item)) {
-                $sender->sendMessage(TextFormat::RED . "This enchant doesn't work on this item!");
+            if (!$manager->canApply($args['enchant'], $item)) {
+                $this->main->getMessages()->send($sender, 'cannot_apply');
                 return;
             }
 
             $item->addEnchantment(new EnchantmentInstance($enchant, $level));
-            $item = EnchantManager::loreItem($item);
+            $item = $manager->rebuildLore($item);
             $sender->getInventory()->setItemInHand($item);
-            $sender->sendMessage(TextFormat::GREEN . "Successfully applied " . $enchant->getName() . " " . $level . "!");
+            $this->main->getMessages()->send($sender, 'enchant_applied', ['key' => $args['enchant'], 'level' => $level]);
         }
     }
 }

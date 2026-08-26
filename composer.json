@@ -12,9 +12,10 @@
 
   "require": {
     "axolotl-pm/pocketmine-mp": "dev-stable",
-    "paroxity/commando": "3.2.1",
+    "paroxity/commando": "dev-master",
     "muqsit/invmenu": "dev-pm5-delay-rework",
-    "pup/placeholderapi": "3.1.1"
+    "pup/placeholderapi": "3.1.1",
+    "muqsit/simple-packet-handler": "0.1.6"
   },
   "autoload": {
     "classmap": [

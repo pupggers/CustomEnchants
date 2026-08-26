@@ -5,7 +5,6 @@ namespace pup\customenchants\enchants\tools;
 
 
 use pocketmine\block\Block;
-use pocketmine\data\bedrock\EnchantmentIdMap;
 use pocketmine\event\Event;
 use pocketmine\item\Item;
 use pocketmine\item\Tool;
@@ -13,6 +12,7 @@ use pocketmine\player\Player;
 use pocketmine\world\particle\HappyVillagerParticle;
 use pocketmine\world\sound\AnvilUseSound;
 use pup\customenchants\EnchantManager;
+use pup\customenchants\Main;
 use pup\customenchants\types\ToolEnchant;
 
 class RestoreEnchant extends ToolEnchant
@@ -32,7 +32,7 @@ class RestoreEnchant extends ToolEnchant
 
         $newItem = clone $item;
 
-        $enchantId = EnchantmentIdMap::getInstance()->fromId(EnchantManager::IDS['restore']);
+        $enchantId = Main::getInstance()->getEnchantManager()->getByKey('restore');
         if ($enchantId !== null) {
             $newItem->removeEnchantment($enchantId);
         }
@@ -43,7 +43,7 @@ class RestoreEnchant extends ToolEnchant
 
         $player->getInventory()->setItemInHand($newItem);
 
-        $player->sendMessage("§aYour tool has been repaired!");
+        Main::getInstance()->getMessages()->send($player, 'tool_repaired');
         $player->getWorld()->addParticle($player->getPosition(), new HappyVillagerParticle());
         $player->getWorld()->addSound($player->getPosition(), new AnvilUseSound());
     }
