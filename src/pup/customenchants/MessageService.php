@@ -57,6 +57,6 @@ final class MessageService
             $tokens['{' . $key . '}'] = (string) $value;
         }
 
-        return TextFormat::colorize(PlaceholderApi::parse(strtr($message, $tokens), $player));
+        return PlaceholderApi::parse(strtr($message, $tokens), $player);
     }
 }

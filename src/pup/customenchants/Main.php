@@ -50,7 +50,7 @@ class Main extends PluginBase
         $this->saveDefaultConfig();
         Rarity::init($this->getConfig()->get("rarities"));
         PlaceholderApi::initialize();
-        $this->messages = new MessageService($this->getConfig()->get('messages', []));
+        $this->messages = new MessageService($this->getConfig()->get('messages'));
         $this->enchantManager = new EnchantManager($this);
 
         $this->getServer()->getPluginManager()->registerEvents(new EnchantListener(), $this);

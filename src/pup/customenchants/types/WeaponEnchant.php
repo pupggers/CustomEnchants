@@ -26,9 +26,6 @@ abstract class WeaponEnchant extends MeleeWeaponEnchantment
     public function getDescription(): string{
         return $this->description;
     }
-    /**
-     * Make these abstract instead?
-     */
 
     /**
      * @inheritDoc

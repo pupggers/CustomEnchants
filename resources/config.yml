@@ -9,37 +9,37 @@ config_version: 1.0.0
 rarities:
   COMMON:
     weight: 50 #Chance of getting from a ce book
-    display_color: "§f"
+    display_color: "{gray}"
     enabled: true
 
   UNCOMMON:
     weight: 25
-    display_color: "§a"
+    display_color: "{green}"
     enabled: true
 
   RARE:
     weight: 15
-    display_color: "§9"
+    display_color: "{blue}"
     enabled: true
 
   EPIC:
     weight: 10
-    display_color: "§5"
+    display_color: "{light_purple}"
     enabled: true
 
   LEGENDARY:
     weight: 5
-    display_color: "§6"
+    display_color: "{gold}"
     enabled: true
 
   MASTERY:
     weight: 3
-    display_color: "§3"
+    display_color: "{red}"
     enabled: true
 
   HEROIC:
     weight: 0
-    display_color: "§4"
+    display_color: "{dark_red}"
     enabled: true
 # ========================
 #         MESSAGES
@@ -73,9 +73,8 @@ messages:
 # =======================
 #      SETTINGS
 # =======================
-max_level: true #Caps /enchanter enchanting at the max level
 enchant_lore:
-  header: "§r§dEnchantments: "  # The header line
-  entry_format: " §r§8» §r{color}{name} {level}"  # Format for each enchant
+  header: "{reset}{light_purple}Enchantments: "  # The header line
+  entry_format: "{reset} {dark_gray}» {reset}{color}{name} {level}"  # Format for each enchant
   sort_by_rarity: true  # Whether to sort enchants by rarity
   roman_numerals: true # Whether to enable roman numerals as level showcase

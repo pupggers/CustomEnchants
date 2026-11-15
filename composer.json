@@ -1,21 +1,15 @@
 {
   "name": "dre/custom-enchants",
-  "description": "description",
-  "version": "1.0.0",
-
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/pupggers/PocketMine-MP"
-    }
-  ],
+  "description": "Custom Enchants plugin for PocketMine-MP",
+  "version": "2.0.0",
 
   "require": {
-    "axolotl-pm/pocketmine-mp": "dev-stable",
+    "axolotl-pm/pocketmine-mp": "5.51.1",
     "paroxity/commando": "dev-master",
     "muqsit/invmenu": "dev-pm5-delay-rework",
-    "pup/placeholderapi": "3.1.1",
-    "muqsit/simple-packet-handler": "0.1.6"
+    "pup/placeholderapi": "v4.0.0",
+    "muqsit/simple-packet-handler": "0.1.6",
+	  "ext-ctype": "*"
   },
   "autoload": {
     "classmap": [

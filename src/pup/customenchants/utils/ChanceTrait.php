@@ -8,7 +8,6 @@ trait ChanceTrait
     private float $baseChance = 10.0;
 
     public function setBaseChance(float $chance): void {
-        // Decimal values preserve the old config convention: 0.1 means 10%.
         $this->baseChance = max(0, min(100, $chance <= 1 ? $chance * 100 : $chance));
     }
 

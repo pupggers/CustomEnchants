@@ -12,6 +12,7 @@ use pup\customenchants\types\ToggledArmorEnchant;
 
 class BunnyEnchant extends ToggledArmorEnchant
 {
+	//TODO: Save guard? only remove if was added.
 
     public function onEquip(Player $player, Item $item)
     : void

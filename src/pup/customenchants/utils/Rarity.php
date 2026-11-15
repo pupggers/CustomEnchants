@@ -4,6 +4,7 @@ namespace pup\customenchants\utils;
 
 final class Rarity
 {
+	//Enums?
     private static array $rarities = [];
 
     public const int COMMON = 1;

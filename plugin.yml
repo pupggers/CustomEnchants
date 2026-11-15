@@ -2,7 +2,7 @@ name: CustomEnchant
 main: pup\customenchants\Main
 author: pup
 api: 5.0.0
-version: 1.1.0
+version: 2.0.0
 
 permissions:
   enchant.command:

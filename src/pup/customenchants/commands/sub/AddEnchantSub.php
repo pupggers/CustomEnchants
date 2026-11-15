@@ -26,7 +26,7 @@ final class AddEnchantSub extends BaseSubCommand
     : void
     {
         $this->registerArgument(0, new RawStringArgument('enchant'));
-        $this->registerArgument(1, new IntegerArgument('level', true));
+        $this->registerArgument(1, new IntegerArgument('level', false));
     }
 
     public function onRun(CommandSender $sender, string $aliasUsed, array $args)
@@ -51,12 +51,6 @@ final class AddEnchantSub extends BaseSubCommand
             $level = $args['level'] ?? 1;
 
             $level = (int)abs($level);
-            $config = Main::getInstance()->getConfig();
-
-            if ($config->get("max_level", true) && $level > $enchant->getMaxLevel()) {
-                $this->main->getMessages()->send($sender, 'level_exceeds_max', ['max_level' => $enchant->getMaxLevel()]);
-                return;
-            }
 
             if (!$manager->canApply($args['enchant'], $item)) {
                 $this->main->getMessages()->send($sender, 'cannot_apply');

@@ -36,6 +36,7 @@ use pup\customenchants\enchants\tools\pickaxe\DrillEnchant;
 use pup\customenchants\enchants\tools\pickaxe\FeedEnchant;
 use pup\customenchants\enchants\tools\pickaxe\HasteEnchant;
 use pup\customenchants\items\ItemRegistry;
+use pup\customenchants\types\WeaponEnchant;
 use pup\customenchants\utils\Rarity;
 use RuntimeException;
 
@@ -83,20 +84,10 @@ final class EnchantManager
         if (!is_array($decoded)) {
             throw new RuntimeException('Could not read enchantments.json: it must contain a JSON object.');
         }
-        $changed = false;
-        if (isset($decoded['aronsit']) && !isset($decoded['aronist'])) {
-            $decoded['aronist'] = $decoded['aronsit'];
-            unset($decoded['aronsit']);
-            $changed = true;
-        }
         foreach (self::DEFINITIONS as $key => $_definition) {
             if (!isset($decoded[$key])) {
                 $decoded[$key] = $this->defaultData($key);
-                $changed = true;
             }
-        }
-        if ($changed) {
-            file_put_contents($path, json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
         }
         return $decoded;
     }
@@ -197,7 +188,7 @@ final class EnchantManager
         $generated = [];
         foreach ($item->getEnchantments() as $instance) {
             $enchant = $instance->getType();
-            if (!$enchant instanceof CustomEnchant && !$enchant instanceof \pup\customenchants\types\WeaponEnchant) {
+            if (!$enchant instanceof CustomEnchant && !$enchant instanceof WeaponEnchant) {
                 continue;
             }
             $name = $enchant->getName();

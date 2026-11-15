@@ -2,18 +2,17 @@
 
 namespace pup\customenchants;
 
-use pocketmine\item\enchantment\MeleeWeaponEnchantment;
 use pocketmine\lang\Translatable;
 use pocketmine\player\Player;
-use pup\customenchants\types\WeaponEnchant;
 use pup\customenchants\utils\Rarity;
+use pup\placeholderapi\placeholder\ClosurePlaceholder;
 use pup\placeholderapi\PlaceholderApi;
 
 final class EnchantPlaceholders
 {
     public static function register(EnchantManager $enchantManager): void
     {
-        PlaceholderApi::registerPlaceholder(
+        PlaceholderApi::registerCustomPlaceholder(new ClosurePlaceholder(
             'enchant_name',
             function (?Player $player, ?string $params) use ($enchantManager): string {
                 $enchant = $params !== null ? $enchantManager->getByKey($params) : null;
@@ -24,18 +23,18 @@ final class EnchantPlaceholders
                 return $name instanceof Translatable ? $name->getText() : $name;
             },
             supportsParameters: true
-        );
+        ));
 
-        PlaceholderApi::registerPlaceholder(
+        PlaceholderApi::registerCustomPlaceholder(new ClosurePlaceholder(
             'enchant_max_level',
             function (?Player $player, ?string $params) use ($enchantManager): string {
                 $enchant = $params !== null ? $enchantManager->getByKey($params) : null;
                 return (string) $enchant?->getMaxLevel();
             },
             supportsParameters: true
-        );
+        ));
 
-        PlaceholderApi::registerPlaceholder(
+        PlaceholderApi::registerCustomPlaceholder(new ClosurePlaceholder(
             'enchant_rarity',
             function (?Player $player, ?string $params) use ($enchantManager): string {
                 $enchant = $params !== null ? $enchantManager->getByKey($params) : null;
@@ -45,18 +44,18 @@ final class EnchantPlaceholders
                 return ucfirst(strtolower($enchant->getRarity()->name));
             },
             supportsParameters: true
-        );
+        ));
 
-        PlaceholderApi::registerPlaceholder(
+        PlaceholderApi::registerCustomPlaceholder(new ClosurePlaceholder(
             'enchant_rarity_color',
             function (?Player $player, ?string $params) use ($enchantManager): string {
                 $enchant = $params !== null ? $enchantManager->getByKey($params) : null;
                 return $enchant instanceof CustomEnchant ? Rarity::getColor($enchant->getRarity()) : '';
             },
             supportsParameters: true
-        );
+        ));
 
-        PlaceholderApi::registerPlaceholder(
+        PlaceholderApi::registerCustomPlaceholder(new ClosurePlaceholder(
             'enchant_chance',
             function (?Player $player, ?string $params) use ($enchantManager): string {
                 if ($params === null || !str_contains($params, ',')) {
@@ -71,14 +70,14 @@ final class EnchantPlaceholders
                 return number_format($enchant->getChance($level, $enchant->getMaxLevel()), 2);
             },
             supportsParameters: true
-        );
+        ));
 
-        PlaceholderApi::registerPlaceholder(
+        PlaceholderApi::registerCustomPlaceholder(new ClosurePlaceholder(
             'roman',
             fn(?Player $player, ?string $params): string =>
             $params !== null && ctype_digit($params) ? EnchantManager::intToRoman((int) $params) : ($params ?? ''),
             supportsParameters: true
-        );
+        ));
     }
 
 }
