@@ -1,95 +1,64 @@
 <?php
 
+declare(strict_types=1);
+
 namespace pup\customenchants\utils;
 
-final class Rarity
+enum Rarity: int
 {
-	//Enums?
-    private static array $rarities = [];
+	case COMMON = 1;
+	case UNCOMMON = 2;
+	case RARE = 3;
+	case EPIC = 4;
+	case LEGENDARY = 5;
+	case MASTERY = 6;
+	case HEROIC = 7;
 
-    public const int COMMON = 1;
-    public const int UNCOMMON = 2;
-    public const int RARE = 3;
-    public const int EPIC = 4;
-    public const int LEGENDARY = 5;
-    public const int MASTERY = 6;
-    public const int HEROIC = 7;
+	/** @param array<string, mixed> $config the "rarities" section of config.yml */
+	public static function init(array $config): void
+	{
+		RarityConfig::init($config);
+	}
 
-    public static function init(array $config): void
-    {
-        self::$rarities = [
-            self::COMMON => [
-                'name' => 'COMMON',
-                'color' => $config['COMMON']['display_color'] ?? '§f',
-                'weight' => $config['COMMON']['weight'] ?? 50,
-                'enabled' => $config['COMMON']['enabled'] ?? true
-            ],
-            self::UNCOMMON => [
-                'name' => 'UNCOMMON',
-                'color' => $config['UNCOMMON']['display_color'] ?? '§a',
-                'weight' => $config['UNCOMMON']['weight'] ?? 25,
-                'enabled' => $config['UNCOMMON']['enabled'] ?? true
-            ],
-            self::RARE => [
-                'name' => 'RARE',
-                'color' => $config['RARE']['display_color'] ?? '§9',
-                'weight' => $config['RARE']['weight'] ?? 15,
-                'enabled' => $config['RARE']['enabled'] ?? true
-            ],
-            self::EPIC => [
-                'name' => 'EPIC',
-                'color' => $config['EPIC']['display_color'] ?? '§5',
-                'weight' => $config['EPIC']['weight'] ?? 10,
-                'enabled' => $config['EPIC']['enabled'] ?? true
-            ],
-            self::LEGENDARY => [
-                'name' => 'LEGENDARY',
-                'color' => $config['LEGENDARY']['display_color'] ?? '§6',
-                'weight' => $config['LEGENDARY']['weight'] ?? 5,
-                'enabled' => $config['LEGENDARY']['enabled'] ?? true
-            ],
-            self::MASTERY => [
-                'name' => 'MASTERY',
-                'color' => $config['MASTERY']['display_color'] ?? '§3',
-                'weight' => $config['MASTERY']['weight'] ?? 3,
-                'enabled' => $config['MASTERY']['enabled'] ?? true
-            ],
-            self::HEROIC => [
-                'name' => 'HEROIC',
-                'color' => $config['HEROIC']['display_color'] ?? '§4',
-                'weight' => $config['HEROIC']['weight'] ?? 0,
-                'enabled' => $config['HEROIC']['enabled'] ?? true
-            ]
-        ];
-    }
+	public static function fromValue(int $value): self
+	{
+		return self::tryFrom($value) ?? self::UNCOMMON;
+	}
 
-    public static function isEnabled(int $rarity): bool
-    {
-        return self::$rarities[$rarity]['enabled'] ?? false;
-    }
+	public static function fromName(string $name): self
+	{
+		$name = strtoupper($name);
+		foreach (self::cases() as $case) {
+			if ($case->name === $name && $case->isEnabled()) {
+				return $case;
+			}
+		}
+		return self::UNCOMMON;
+	}
 
-    public static function getEnabledRarities(): array
-    {
-        return array_filter(self::$rarities, fn($r) => $r['enabled']);
-    }
+	/** @return list<self> */
+	public static function enabled(): array
+	{
+		return array_values(array_filter(self::cases(), static fn(self $r): bool => $r->isEnabled()));
+	}
 
-    public static function getColor(int $rarity): string
-    {
-        return self::$rarities[$rarity]['color'] ?? '§f';
-    }
+	public function label(): string
+	{
+		return ucfirst(strtolower($this->name));
+	}
 
-    public static function getName(int $rarity): string
-    {
-        return self::$rarities[$rarity]['name'] ?? 'UNKNOWN';
-    }
+	public function color(): string
+	{
+		return RarityConfig::color($this);
+	}
 
-    public static function fromName(string $name): int
-    {
-        foreach (self::$rarities as $id => $rarity) {
-            if (strtoupper($name) === $rarity['name'] && self::isEnabled($id)) {
-                return $id;
-            }
-        }
-        return self::UNCOMMON;
-    }
+	public function weight(): int
+	{
+		return RarityConfig::weight($this);
+	}
+
+	public function isEnabled(): bool
+	{
+		return RarityConfig::isEnabled($this);
+	}
 }

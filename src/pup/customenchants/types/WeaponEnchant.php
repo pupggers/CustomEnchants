@@ -8,15 +8,13 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use pocketmine\item\enchantment\ItemFlags;
 use pocketmine\item\enchantment\MeleeWeaponEnchantment;
+use pup\customenchants\CustomEnchantInterface;
 use pup\customenchants\utils\ChanceTrait;
 
-abstract class WeaponEnchant extends MeleeWeaponEnchantment
-{
+abstract class WeaponEnchant extends MeleeWeaponEnchantment implements CustomEnchantInterface{
     use ChanceTrait;
 
-
-    //Best way to do this while still using MeleeWeapon class?
-    private string $description;
+	private string $description;
 
     public function __construct(string $name, int $rarity, string $description, int $maxLevel, int $primaryFlag, int $secondaryFlag = ItemFlags::NONE) {
         $this->description = $description;

@@ -1,34 +1,40 @@
 <?php
 
+declare(strict_types=1);
+
 namespace pup\customenchants\utils;
 
 trait ChanceTrait
 {
-    /** Stored and returned as a percentage between 0 and 100. */
-    private float $baseChance = 10.0;
+	private float $baseChance = 10.0;
 
-    public function setBaseChance(float $chance): void {
-        $this->baseChance = max(0, min(100, $chance <= 1 ? $chance * 100 : $chance));
-    }
+	public function setBaseChance(float $chance): void
+	{
+		$percent = $chance <= 1.0 ? $chance * 100.0 : $chance;
+		$this->baseChance = max(0.0, min(100.0, $percent));
+	}
 
-    public function getChance(int $currentLevel, int $maxLevel): float {
-        return $this->calculateChance($currentLevel, $maxLevel, $this->baseChance);
-    }
+	public function getChance(int $currentLevel, int $maxLevel): float
+	{
+		return $this->calculateChance($currentLevel, $maxLevel, $this->baseChance);
+	}
 
-    private function calculateChance($currentLevel, $maxLevel, $baseChance)
-    {
-        $currentLevel = max(1, min($currentLevel, $maxLevel));
+	private function calculateChance(int $currentLevel, int $maxLevel, float $baseChance): float
+	{
+		$maxLevel = max(1, $maxLevel);
+		$currentLevel = max(1, min($currentLevel, $maxLevel));
 
-        if ($currentLevel === $maxLevel) {
-            return 100;
-        }
-        $chanceIncreasePerLevel = (100 - $baseChance) / ($maxLevel - 1);
-        $adjustedChance = $baseChance + ($currentLevel - 1) * $chanceIncreasePerLevel;
+		if ($currentLevel === $maxLevel) {
+			return 100.0;
+		}
 
-        return min(100, $adjustedChance);
-    }
+		$increasePerLevel = (100.0 - $baseChance) / ($maxLevel - 1);
 
-    public function hasChanceTrait(): bool{
-        return true;
-    }
+		return min(100.0, $baseChance + ($currentLevel - 1) * $increasePerLevel);
+	}
+
+	public function hasChanceTrait(): bool
+	{
+		return true;
+	}
 }

@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace pup\customenchants;
 
@@ -9,8 +10,7 @@ use pocketmine\item\enchantment\ItemFlags;
 use pup\customenchants\utils\ChanceTrait;
 
 
-abstract class CustomEnchant extends Enchantment
-{
+abstract class CustomEnchant extends Enchantment implements CustomEnchantInterface{
     use ChanceTrait;
 
     private string $description;
