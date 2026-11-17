@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace pup\customenchants\utils;
 
+use pup\customenchants\EnchantManager;
+
 enum Rarity: int
 {
 	case COMMON = 1;
@@ -13,12 +15,6 @@ enum Rarity: int
 	case LEGENDARY = 5;
 	case MASTERY = 6;
 	case HEROIC = 7;
-
-	/** @param array<string, mixed> $config the "rarities" section of config.yml */
-	public static function init(array $config): void
-	{
-		RarityConfig::init($config);
-	}
 
 	public static function fromValue(int $value): self
 	{
@@ -47,18 +43,7 @@ enum Rarity: int
 		return ucfirst(strtolower($this->name));
 	}
 
-	public function color(): string
-	{
-		return RarityConfig::color($this);
-	}
-
-	public function weight(): int
-	{
-		return RarityConfig::weight($this);
-	}
-
-	public function isEnabled(): bool
-	{
-		return RarityConfig::isEnabled($this);
-	}
+	public function color(): string { return EnchantManager::rarityColor($this); }
+	public function weight(): int { return EnchantManager::rarityWeight($this); }
+	public function isEnabled(): bool { return EnchantManager::isRarityEnabled($this); }
 }

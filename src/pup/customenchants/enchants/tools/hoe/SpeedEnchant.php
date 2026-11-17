@@ -15,11 +15,9 @@ use pup\customenchants\types\ToolEnchant;
 class SpeedEnchant extends ToolEnchant
 {
 
-    public function execute(Player $player, Item $item, Block $block, ?Event $event)
+    public function execute(Player $player, Item $item, Block $block, ?Event $event, int $level)
     : void
     {
-        $level = $item->getEnchantment($this)->getLevel();
-
         $player->getEffects()->add(new EffectInstance(VanillaEffects::SPEED(), 255, min($level - 1, 1)));
     }
 }

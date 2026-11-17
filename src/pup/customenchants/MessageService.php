@@ -3,7 +3,6 @@
 namespace pup\customenchants;
 
 use pocketmine\player\Player;
-use pocketmine\utils\TextFormat;
 use pup\placeholderapi\PlaceholderApi;
 
 final class MessageService
@@ -12,6 +11,7 @@ final class MessageService
         'invalid_enchantment' => '{red}That enchantment is unavailable.', 'item_null' => '{red}Hold an item first.',
         'level_exceeds_max' => '{red}That level exceeds the maximum of {max_level}.', 'cannot_apply' => '{red}That enchantment cannot be applied to this item.',
         'enchant_applied' => '{green}Applied {enchant_name} {level} to your item.', 'enchant_removed' => '{green}Removed {enchant_name} from your item.',
+        'enchant_not_on_item' => '{red}That item does not have {enchant_name}.',
         'tool_repaired' => '{green}Your tool has been repaired!', 'book_max_level' => '{red}This enchantment is already at its maximum level.',
         'book_combine_mismatch' => '{red}You can only combine books with the same enchantment and level.', 'durable_items_only' => '{red}You can only enchant durable items.',
         'item_has_equal_or_higher' => '{red}This item already has that enchantment at an equal or higher level.', 'item_enchant_max_level' => '{red}This enchantment is already at its maximum level on this item.',

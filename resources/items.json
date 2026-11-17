@@ -1,28 +1,56 @@
 {
-  "white_scroll": {
-    "enabled": true,
-    "display_name": "{white}White Scroll",
-    "lore": ["{gray}Protects an item from breaking", "", "{dark_gray}Combine with an item to use"]
-  },
-  "holy_scroll": {
-    "enabled": true,
-    "display_name": "{gold}Holy Scroll",
-    "lore": ["{gray}Protects an item from breaking", "{gold}Item will be marked as HOLY", "", "{dark_gray}Combine with an item to use"]
-  },
-  "black_scroll": {
-    "enabled": true,
-    "display_name": "{dark_gray}Black Scroll",
-    "lore": ["{gray}Removes a random enchantment", "{gray}Success chance: {chance}%", "", "{dark_gray}Combine with an item to use"],
-    "chance": 50
-  },
-  "random_enchant_book": {
-    "enabled": true,
-    "display_name": "{rarity_color}Enchantment Book {gray}({rarity_name})",
-    "lore": ["{gray}Right-click to generate a random", "{gray}{rarity_name} enchantment book", "", "{dark_gray}Right-click to use"]
-  },
-  "enchantment_book": {
-    "enabled": true,
-    "display_name": "{rarity_color}{enchant_name} {level}",
-    "lore": ["{gray}Combine with an item to apply this enchantment", "{gray}Combine two matching books to increase its level", "", "{dark_gray}Combine with an item to use", "", "{rarity_color}Rarity: {rarity_name}"]
-  }
+	"white_scroll": {
+		"enabled": true,
+		"display_name": "{white}White Scroll",
+		"lore": ["{gray}Protects an item from breaking", "", "{dark_gray}Combine with an item to use"]
+	},
+	"holy_scroll": {
+		"enabled": true,
+		"display_name": "{gold}Holy Scroll",
+		"lore": ["{gray}Protects an item from breaking", "{gold}Item will be marked as HOLY", "", "{dark_gray}Combine with an item to use"]
+	},
+	"black_scroll": {
+		"enabled": true,
+		"display_name": "{dark_gray}Black Scroll",
+		"lore": ["{gray}Removes a random enchantment", "{gray}Success chance: {chance}%", "", "{dark_gray}Combine with an item to use"],
+		"chance": 50
+	},
+	"random_enchant_book": {
+		"enabled": true,
+		"display_name": "{rarity_color}Enchantment Book {gray}({rarity_name})",
+		"lore": ["{gray}Right-click to generate a random", "{gray}{rarity_name} enchantment book", "", "{dark_gray}Right-click to use"]
+	},
+	"enchantment_book": {
+		"enabled": true,
+		"display_name": "{rarity_color}{enchant_name} {level}",
+		"lore": ["{gray}Combine with an item to apply this enchantment", "{gray}Combine two matching books to increase its level", "", "{dark_gray}Combine with an item to use", "", "{rarity_color}Rarity: {rarity_name}"],
+		"chance_lore": ["", "{green}Success rate: {success}%", "{red}Destroy rate: {destroy}%"]
+	},
+	"magic_dust": {
+		"enabled": true,
+		"item": "sugar",
+		"display_name": "{light_purple}Magic Dust",
+		"lore": ["{gray}Reveals a random dust:", "{yellow}Glowstone {gray}| Gunpowder {gray}| {green}Bio Product", "", "{dark_gray}Right-click to use"],
+		"weights": {"glowstone": 40, "gunpowder": 40, "bio": 20}
+	},
+	"glowstone_dust": {
+		"enabled": true,
+		"item": "glowstone_dust",
+		"display_name": "{yellow}Glowstone Dust",
+		"lore": ["{gray}Increases an enchantment book's", "{gray}success rate by {green}{amount}%", "", "{dark_gray}Combine with an enchantment book"],
+		"amount": 10
+	},
+	"gunpowder_dust": {
+		"enabled": true,
+		"item": "gunpowder",
+		"display_name": "{gray}Gunpowder Dust",
+		"lore": ["{gray}Decreases an enchantment book's", "{gray}destroy rate by {green}{amount}%", "", "{dark_gray}Combine with an enchantment book"],
+		"amount": 10
+	},
+	"bio_dust": {
+		"enabled": true,
+		"item": "slimeball",
+		"display_name": "{gray}Bi-Product",
+		"lore": ["{gray}Does absolutely nothing.", "", "{dark_gray}Combine with an enchantment book"]
+	}
 }

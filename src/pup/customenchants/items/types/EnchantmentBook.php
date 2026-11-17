@@ -9,33 +9,77 @@ use pocketmine\item\enchantment\Enchantment;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
+use pocketmine\lang\Translatable;
 use pocketmine\player\Player;
 use pocketmine\world\sound\AnvilFallSound;
 use pocketmine\world\sound\AnvilUseSound;
-use pup\customenchants\CustomEnchant;
-use pup\customenchants\Main;
 use pup\customenchants\items\CustomItem;
-use pup\customenchants\items\ItemRegistry;
 use pup\customenchants\items\interface\InventoryTransactionInterface;
+use pup\customenchants\items\ItemRegistry;
+use pup\customenchants\Main;
 use pup\customenchants\utils\Rarity;
+use pup\customenchants\utils\Settings;
+use Random\RandomException;
 
 final class EnchantmentBook extends CustomItem implements InventoryTransactionInterface
 {
-    public function __construct(Enchantment $enchantment, int $level = 1){
+	/**
+	 * @param Enchantment $enchantment
+	 * @param int $level
+	 * @param int|null $success
+	 * @param int|null $destroy
+	 * @throws RandomException
+	 */
+    public function __construct(Enchantment $enchantment, int $level = 1, ?int $success = null, ?int $destroy = null){
         $item = VanillaItems::BOOK();
+
+        $name = $enchantment->getName();
+        $name = $name instanceof Translatable ? $name->getText() : $name;
 
         $item->getNamedTag()
             ->setString(self::CUSTOM_ITEM_ID, "enchantment_book")
-            ->setString("enchant", $enchantment->getName())
+            ->setString("enchant", $name)
             ->setInt("level", $level)
             ->setString("uid", uniqid());
 
-        $name = $enchantment->getName();
+        $rarity = Rarity::fromValue($enchantment->getRarity());
+        $replacements = [
+            'rarity_color' => $rarity->color(),
+            'rarity_name' => $rarity->label(),
+            'enchant_name' => $name,
+            'level' => $level
+        ];
 
-        $replacements = ['rarity_color' => Rarity::getColor($enchantment->getRarity()), 'rarity_name' => Rarity::getName($enchantment->getRarity()), 'enchant_name' => $name, 'level' => $level];
-        parent::__construct('enchantment_book', ItemRegistry::getName('enchantment_book', '{enchant_name} {level}', $replacements), ItemRegistry::getLore('enchantment_book', ['Combine with an item to use'], $replacements), $item);
+        $chanceLines = [];
+        if (Settings::booksEnabled()) {
+            $success = Settings::clamp($success ?? mt_rand(Settings::bookSuccessMin(), Settings::bookSuccessMax()));
+            $destroy = Settings::clamp($destroy ?? Settings::bookDestroyChance());
+
+            $item->getNamedTag()
+                ->setInt("success", $success)
+                ->setInt("destroy", $destroy);
+
+            $replacements['success'] = $success;
+            $replacements['destroy'] = $destroy;
+            $chanceLines = ItemRegistry::getLines(
+                'enchantment_book',
+                'chance_lore',
+                ['{green}Success rate: {success}%', '{red}Destroy rate: {destroy}%'],
+                $replacements
+            );
+        }
+
+        parent::__construct(
+            'enchantment_book',
+            ItemRegistry::getName('enchantment_book', '{enchant_name} {level}', $replacements),
+            [...ItemRegistry::getLore('enchantment_book', ['Combine with an item to use'], $replacements), ...$chanceLines],
+            $item
+        );
     }
 
+    /**
+     * @throws RandomException
+     */
     public function onInventoryTransaction(InventoryTransactionEvent $e, Player $player, Item $item, Item $target, SlotChangeAction $action1, SlotChangeAction $action2)
     : void
     {
@@ -57,6 +101,10 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
         }
 
         if ($book === null || $targetItem === null || $targetItem->isNull()) {
+            return;
+        }
+
+        if (!$this->isEnchantBook($targetItem) && $targetItem->getNamedTag()->getTag(self::CUSTOM_ITEM_ID) !== null) {
             return;
         }
 
@@ -128,14 +176,26 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
                     }
                 }
 
-                $targetItem->addEnchantment(new EnchantmentInstance($enchant, $bookLevel));
-                $targetItem = $manager->rebuildLore($targetItem);
+                $success = 100;
+                $destroy = 0;
+                if (Settings::booksEnabled() && $book->getNamedTag()->getTag("success") !== null) {
+                    $success = $book->getNamedTag()->getInt("success");
+                    $destroy = $book->getNamedTag()->getInt("destroy", Settings::bookDestroyChance());
+                }
 
                 $book->pop();
                 $bookAction->getInventory()->setItem($bookAction->getSlot(), $book->getCount() > 0 ? $book : VanillaItems::AIR());
-                $targetAction->getInventory()->setItem($targetAction->getSlot(), $targetItem);
 
-                $player->getWorld()->addSound($player->getLocation(), new AnvilUseSound());
+                if (random_int(1, 100) <= $success) {
+                    $targetItem->addEnchantment(new EnchantmentInstance($enchant, $bookLevel));
+                    $targetItem = $manager->rebuildLore($targetItem);
+                    $targetAction->getInventory()->setItem($targetAction->getSlot(), $targetItem);
+
+                    $player->getWorld()->addSound($player->getLocation(), new AnvilUseSound());
+                } else {
+                    $this->onFailure($player, $targetAction, $targetItem, $destroy);
+                }
+
                 $e->cancel();
                 return;
             }
@@ -145,8 +205,46 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
         $e->cancel();
     }
 
-    private function isEnchantBook(Item $item): bool
+    /**
+     * The book failed. $destroy % of the time the item is destroyed, otherwise it is simply kept.
+     * An item with a White/Holy Scroll on it survives a destroy roll, and the scroll is used up.
+     *
+     * @throws RandomException
+     */
+    private function onFailure(Player $player, SlotChangeAction $targetAction, Item $targetItem, int $destroy)
+    : void
+    {
+        $messages = Main::getInstance()->getMessages();
+        $player->getWorld()->addSound($player->getLocation(), new AnvilFallSound());
+
+        if (random_int(1, 100) > $destroy) {
+            $messages->send($player, 'book_failed_kept');
+            return;
+        }
+
+		if (WhiteScroll::isProtectedItem($targetItem)) {
+			if (WhiteScroll::isHolyItem($targetItem)) {
+				$messages->send($player, 'book_failed_holy_protected');
+			} else {
+				WhiteScroll::removeProtection($targetItem);
+				$messages->send($player, 'book_failed_protected');
+			}
+			$targetAction->getInventory()->setItem($targetAction->getSlot(), $targetItem);
+			return;
+		}
+
+        $targetAction->getInventory()->setItem($targetAction->getSlot(), VanillaItems::AIR());
+        $messages->send($player, 'book_failed_destroyed');
+    }
+
+    public static function isBook(Item $item)
+    : bool
     {
         return $item->getNamedTag()->getString(self::CUSTOM_ITEM_ID, "") === "enchantment_book";
+    }
+
+    private function isEnchantBook(Item $item): bool
+    {
+        return self::isBook($item);
     }
 }

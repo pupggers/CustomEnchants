@@ -12,13 +12,12 @@ use pup\customenchants\types\BowEnchant;
 class TeleportEnchant extends BowEnchant
 {
 
-    public function execute(Player $player, Item $item, Arrow $arrow)
-    : void
-    {
-        if ($player->getWorld() !== null && $arrow->getWorld() !== null) {
-            if ($player->getWorld() === $arrow->getWorld()) {
-                $player->teleport($arrow->getPosition());
-            }
-        }
-    }
+	public function execute(Player $player, Item $bow, Arrow $arrow, int $level): void
+	{
+		if ($player->getWorld() !== null && $arrow->getWorld() !== null) {
+			if ($player->getWorld() === $arrow->getWorld()) {
+				$player->teleport($arrow->getPosition());
+			}
+		}
+	}
 }

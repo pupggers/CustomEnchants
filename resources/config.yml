@@ -1,7 +1,7 @@
 # ========================
 #      CONFIG VERSION
 # ========================
-config_version: 1.0.0
+config_version: 2.0.0
 
 # ========================
 #        RARITIES
@@ -42,6 +42,26 @@ rarities:
     display_color: "{dark_red}"
     enabled: true
 # ========================
+#     ENCHANTMENT BOOKS
+# ========================
+# When true, every enchantment book has a SUCCESS rate. If applying it fails, there is a
+# destroy_chance % chance the item is destroyed (50 = a 50/50 coin flip). Otherwise, the item is
+# simply kept. An item with a White/Holy Scroll is never destroyed: the scroll is used up instead.
+# Turning this off also turns off Magic Dust (it only works on books that have these rates).
+book_chance: true
+
+enchant_books:
+  success_min: 30      # a new book rolls its success rate between these two numbers
+  success_max: 100
+  destroy_chance: 50   # % chance a FAILED book destroys the item
+
+# ========================
+#       BLACK SCROLL
+# ========================
+black_scroll:
+  remove_enchantments: true  # false = Black Scrolls refuse to remove anything
+
+# ========================
 #         MESSAGES
 # ========================
 messages:
@@ -66,7 +86,20 @@ messages:
   black_scroll_failure: "{red}Failed to remove an enchantment."
   white_scroll_durable_only: "{red}That item must be durable."
   white_scroll_protected: "{red}That item is already protected."
+  book_failed_holy_protected: "{gold}The enchantment failed, but your Holy protection saved the item!"
   item_processing_error: "{red}An error occurred while processing that item."
+  black_scroll_disabled: "{red}Black Scrolls can't remove enchantments right now."
+  book_failed_kept: "{yellow}The enchantment failed, but your item survived."
+  book_failed_protected: "{gold}The enchantment failed, but your protection scroll saved the item!"
+  book_failed_destroyed: "{red}The enchantment failed and your item was destroyed!"
+  dust_opened: "{green}The Magic Dust revealed: {dust_name}{green}!"
+  dusts_opened: "{green}Revealed {amount} dusts!"
+  inventory_full_dust: "{red}Your inventory is full; {amount} dust(s) were dropped."
+  dust_books_only: "{red}Dust can only be combined with an enchantment book."
+  dust_maxed: "{red}This book can't be improved any further with that dust."
+  dust_success_boosted: "{green}The book's success rate is now {success}%."
+  dust_destroy_reduced: "{green}The book's destroy rate is now {destroy}%."
+  dust_nothing: "{gray}The Bio Product fizzled out. Nothing happened."
   proc_messages:
     enabled: true
     format: "§e{enchant_name:{key}} §fhas activated! (Level: {level})"

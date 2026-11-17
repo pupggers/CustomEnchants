@@ -1,45 +1,26 @@
 <?php
 
+declare(strict_types=1);
 
 namespace pup\customenchants\types;
 
-
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
-use pocketmine\item\enchantment\ItemFlags;
 use pocketmine\item\enchantment\MeleeWeaponEnchantment;
 use pup\customenchants\CustomEnchantInterface;
-use pup\customenchants\utils\ChanceTrait;
+use pup\customenchants\utils\CustomEnchantTrait;
 
-abstract class WeaponEnchant extends MeleeWeaponEnchantment implements CustomEnchantInterface{
-    use ChanceTrait;
+abstract class WeaponEnchant extends MeleeWeaponEnchantment implements CustomEnchantInterface
+{
+	use CustomEnchantTrait;
 
-	private string $description;
+	public function isApplicableTo(Entity $victim): bool
+	{
+		return $victim instanceof Living;
+	}
 
-    public function __construct(string $name, int $rarity, string $description, int $maxLevel, int $primaryFlag, int $secondaryFlag = ItemFlags::NONE) {
-        $this->description = $description;
-        parent::__construct($name, $rarity, $primaryFlag, $secondaryFlag, $maxLevel);
-    }
-
-    public function getDescription(): string{
-        return $this->description;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function isApplicableTo(Entity $victim)
-    : bool
-    {
-        return $victim instanceof Living;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getDamageBonus(int $enchantmentLevel)
-    : float
-    {
-        return 0;
-    }
+	public function getDamageBonus(int $enchantmentLevel): float
+	{
+		return 0.0;
+	}
 }

@@ -13,13 +13,13 @@ use pup\customenchants\types\ToggledArmorEnchant;
 class AquaticEnchant extends ToggledArmorEnchant
 {
 
-    public function onEquip(Player $player, Item $item)
+    public function onEquip(Player $player, Item $item, int $level)
     : void
     {
-        $player->getEffects()->add(new EffectInstance(VanillaEffects::WATER_BREATHING(), 2147483647, 1,true, false, null, true));
+        $player->getEffects()->add(new EffectInstance(VanillaEffects::WATER_BREATHING(), 2147483647, max(0, $level - 1),true, false, null, true));
     }
 
-    public function onDequip(Player $player, Item $item)
+    public function onDequip(Player $player, Item $item, int $level)
     : void
     {
         if($player->getEffects()->has(VanillaEffects::WATER_BREATHING())){
