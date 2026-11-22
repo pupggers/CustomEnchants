@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace pup\customenchants\utils;
 
-use pocketmine\item\enchantment\ItemFlags;
-
 trait CustomEnchantTrait
 {
     use ChanceTrait;
@@ -16,12 +14,11 @@ trait CustomEnchantTrait
         string $name,
         int $rarity,
         string $description,
-        int $maxLevel,
-        int $primaryFlag,
-        int $secondaryFlag = ItemFlags::NONE
+        int $maxLevel
     ) {
         $this->description = $description;
-        parent::__construct($name, $rarity, $primaryFlag, $secondaryFlag, $maxLevel);
+        // The two 0s are the deprecated ItemFlags parameters, which PocketMine still requires.
+        parent::__construct($name, $rarity, 0, 0, $maxLevel);
     }
 
     public function getDescription(): string

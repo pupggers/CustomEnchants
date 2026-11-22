@@ -6,6 +6,7 @@ config_version: 2.0.0
 # ========================
 #        RARITIES
 # ========================
+# Add display_name to a tier to rename it (e.g. COMMON -> Simple for the Cosmic addon).
 rarities:
   COMMON:
     weight: 50 #Chance of getting from a ce book
@@ -32,6 +33,11 @@ rarities:
     display_color: "{gold}"
     enabled: true
 
+  SOUL:
+    weight: 0
+    display_color: "{red}"
+    enabled: true
+
   MASTERY:
     weight: 3
     display_color: "{red}"
@@ -41,6 +47,14 @@ rarities:
     weight: 0
     display_color: "{dark_red}"
     enabled: true
+# ========================
+#         ADDONS
+# ========================
+# Addons run as code on your server: only list repositories you trust.
+addons:
+  repositories: {}  # name: "owner/repo"
+  allow_any_repository: false
+
 # ========================
 #     ENCHANTMENT BOOKS
 # ========================
@@ -69,6 +83,9 @@ messages:
   item_null: "{red}Hold an item first."
   level_exceeds_max: "{red}That level exceeds the maximum of {max_level}."
   cannot_apply: "{red}That enchantment cannot be applied to this item."
+  enchant_conflict: "{red}{enchant_name} can't be combined with {other_name}."
+  enchant_requires: "{red}{enchant_name} requires {other_name} {required_level} on the item first."
+  enchant_forced: "{yellow}Forced {enchant_name} past a conflict/requirement check."
   enchant_applied: "{green}Applied {enchant_name:{key}} {level} to your item."
   enchant_removed: "{green}Removed {enchant_name:{key}} from your item."
   tool_repaired: "{green}Your tool has been repaired!"

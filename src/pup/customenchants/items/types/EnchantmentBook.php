@@ -6,7 +6,6 @@ use pocketmine\event\inventory\InventoryTransactionEvent;
 use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\item\Durable;
 use pocketmine\item\enchantment\Enchantment;
-use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\lang\Translatable;
@@ -176,6 +175,14 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
                     }
                 }
 
+                $check = $manager->check($targetItem, $bookEnchantName, $bookLevel);
+                if (!$check->isOk()) {
+                    $manager->sendResult($player, $check, $bookEnchantName, $bookLevel);
+                    $player->getWorld()->addSound($player->getLocation(), new AnvilFallSound());
+                    $e->cancel();
+                    return;
+                }
+
                 $success = 100;
                 $destroy = 0;
                 if (Settings::booksEnabled() && $book->getNamedTag()->getTag("success") !== null) {
@@ -187,8 +194,7 @@ final class EnchantmentBook extends CustomItem implements InventoryTransactionIn
                 $bookAction->getInventory()->setItem($bookAction->getSlot(), $book->getCount() > 0 ? $book : VanillaItems::AIR());
 
                 if (random_int(1, 100) <= $success) {
-                    $targetItem->addEnchantment(new EnchantmentInstance($enchant, $bookLevel));
-                    $targetItem = $manager->rebuildLore($targetItem);
+                    $manager->apply($targetItem, $bookEnchantName, $bookLevel);
                     $targetAction->getInventory()->setItem($targetAction->getSlot(), $targetItem);
 
                     $player->getWorld()->addSound($player->getLocation(), new AnvilUseSound());
