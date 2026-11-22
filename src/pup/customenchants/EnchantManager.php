@@ -1,149 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace pup\customenchants;
 
+use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
 use Throwable;
 use pocketmine\data\bedrock\EnchantmentIdMap;
-use pocketmine\inventory\ArmorInventory;
-use pocketmine\item\{
-	Armor,
-	Axe,
-	Bow,
-	Hoe,
-	Item,
-	Pickaxe,
-	Shovel,
-	Sword,
-	Tool,
-};
+use pocketmine\item\Item;
 use pocketmine\item\enchantment\{
 	Enchantment,
-	ItemFlags,
+	EnchantmentInstance,
+	ItemEnchantmentTagRegistry,
 };
 use pocketmine\lang\Translatable;
-use pup\customenchants\enchants\armor\{
-	AngelicEnchant,
-	ArmoredEnchant,
-	ArrowDeflectEnchant,
-	CreeperArmorEnchant,
-	CurseEnchant,
-	DisappearEnchant,
-	DivertEnchant,
-	DodgeEnchant,
-	FrozenEnchant,
-	HeavyEnchant,
-	LucidEnchant,
-	MoltenEnchant,
-	ObsidianshieldEnchant,
-	OverloadEnchant,
-	PoisonedEnchant,
-	RagdollEnchant,
-	ReflectEnchant,
-	SafeguardEnchant,
-	ShuffleEnchant,
-	TankEnchant,
-	TricksterEnchant,
-	UnholyEnchant,
-	VoodooEnchant,
-	WitherEnchant,
-};
-use pup\customenchants\enchants\armor\boots\{
-	ConvulseEnchant,
-	GearsEnchant,
-	JellyLegsEnchant,
-	SpringsEnchant,
-	WingsEnchant,
-};
-use pup\customenchants\enchants\armor\chestplate\{
-	ChunkyEnchant,
-	PhoenixEnchant,
-	ShockwaveEnchant,
-};
-use pup\customenchants\enchants\armor\helmet\{
-	AquaticEnchant,
-	GlowingEnchant,
-	ImplantsEnchant,
-};
-use pup\customenchants\enchants\armor\leggings\ExtinguishEnchant;
-use pup\customenchants\enchants\axe\{
-	BarbarianEnchant,
-	BleedEnchant,
-	CleaveEnchant,
-	InflameEnchant,
-	ReaperEnchant,
-};
-use pup\customenchants\enchants\bow\{
-	ArcherEnchant,
-	HellfireEnchant,
-	PerishEnchant,
-	PiercingEnchant,
-	SnareEnchant,
-	TeleportEnchant,
-	VirusEnchant,
-};
-use pup\customenchants\enchants\durability\{
-	AbidingEnchant,
-	ImmortalEnchant,
-	ReforgedEnchant,
-	UnbreakableEnchant,
-};
-use pup\customenchants\enchants\sword\{
-	AmbitEnchant,
-	AronistEnchant,
-	BerserkEnchant,
-	BlindEnchant,
-	ConfuseEnchant,
-	CriticalEnchant,
-	DecapitationEnchant,
-	DevourEnchant,
-	DisarmEnchant,
-	DisarmorEnchant,
-	DoubleStrikeEnchant,
-	EpicnessEnchant,
-	ExaltedEnchant,
-	FamineEnchant,
-	FeatherweightEnchant,
-	ForcefieldEnchant,
-	FuddleEnchant,
-	IceAspectEnchant,
-	ImmolationEnchant,
-	InterruptEnchant,
-	LaunchEnchant,
-	LifestealEnchant,
-	MagnetEnchant,
-	ParalyzeEnchant,
-	PermafrostEnchant,
-	PoisonEnchant,
-	RavenousEnchant,
-	ReboundEnchant,
-	VampireEnchant,
-};
-use pup\customenchants\enchants\tools\{
-	ExperienceEnchant,
-	HastenEnchant,
-	RestoreEnchant,
-	TelepathyEnchant,
-};
-use pup\customenchants\enchants\tools\axe\TimberEnchant;
-use pup\customenchants\enchants\tools\hoe\{
-	CarrotPlanterEnchant,
-	PlanterEnchant,
-	PotatoPlanterEnchant,
-	ReplanterEnchant,
-	SpeedEnchant,
-};
-use pup\customenchants\enchants\tools\pickaxe\{
-	AutoSmeltEnchant,
-	FeedEnchant,
-	RebreatherEnchant,
-	ReplenishEnchant,
-	TrenchEnchant,
-	VeinMinerEnchant,
+use pocketmine\player\Player;
+use pocketmine\plugin\Plugin;
+use pup\customenchants\api\{
+	ApplyResult,
+	ApplyStatus,
+	EnchantDefinition,
 };
 use pup\customenchants\items\ItemRegistry;
-use pup\customenchants\types\SoulboundEnchant;
 use pup\customenchants\utils\{
 	EnchantPlaceholders,
 	EnchantTasks,
@@ -152,154 +32,54 @@ use pup\customenchants\utils\{
 };
 
 final class EnchantManager{
-
-	/** @var array<string, array{id: int, flags: list<int>, make: \Closure}>|null */
-	private static ?array $definitions = null;
-
-	/**
-	 * Internal enchantment definitions, built once.
-	 *
-	 * 'make' creates the enchant with a static `new`, so the DevTools shader can rewrite the class
-	 * names. (A closure can't live in a const, hence a method instead of a constant.)
-	 *
-	 * @return array<string, array{id: int, flags: list<int>, make: \Closure(mixed ...): (Enchantment&CustomEnchantInterface)}>
-	 */
-	private static function definitions() : array{
-		return self::$definitions ??= [
-			'feed' => ['id' => 1000, 'flags' => [ItemFlags::PICKAXE], 'make' => static fn(mixed ...$a) => new FeedEnchant(...$a)],
-			'speed' => ['id' => 1003, 'flags' => [ItemFlags::HOE, ItemFlags::PICKAXE], 'make' => static fn(mixed ...$a) => new SpeedEnchant(...$a)],
-			'blind' => ['id' => 1006, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new BlindEnchant(...$a)],
-			'aronist' => ['id' => 1007, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new AronistEnchant(...$a)],
-			'teleport' => ['id' => 1008, 'flags' => [ItemFlags::BOW], 'make' => static fn(mixed ...$a) => new TeleportEnchant(...$a)],
-			'overload' => ['id' => 1009, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new OverloadEnchant(...$a)],
-			'glowing' => ['id' => 1010, 'flags' => [ItemFlags::HEAD], 'make' => static fn(mixed ...$a) => new GlowingEnchant(...$a)],
-			'gears' => ['id' => 1011, 'flags' => [ItemFlags::FEET], 'make' => static fn(mixed ...$a) => new GearsEnchant(...$a)],
-			'restore' => ['id' => 1013, 'flags' => [ItemFlags::DIG], 'make' => static fn(mixed ...$a) => new RestoreEnchant(...$a)],
-			'shuffle' => ['id' => 1014, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new ShuffleEnchant(...$a)],
-			'aquatic' => ['id' => 1016, 'flags' => [ItemFlags::HEAD], 'make' => static fn(mixed ...$a) => new AquaticEnchant(...$a)],
-			'autosmelt' => ['id' => 1017, 'flags' => [ItemFlags::PICKAXE], 'make' => static fn(mixed ...$a) => new AutoSmeltEnchant(...$a)],
-			'experience' => ['id' => 1018, 'flags' => [ItemFlags::DIG], 'make' => static fn(mixed ...$a) => new ExperienceEnchant(...$a)],
-			'poison' => ['id' => 1019, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new PoisonEnchant(...$a)],
-			'confuse' => ['id' => 1020, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new ConfuseEnchant(...$a)],
-			'iceaspect' => ['id' => 1021, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new IceAspectEnchant(...$a)],
-			'famine' => ['id' => 1022, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new FamineEnchant(...$a)],
-			'interrupt' => ['id' => 1023, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new InterruptEnchant(...$a)],
-			'reaper' => ['id' => 1024, 'flags' => [ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new ReaperEnchant(...$a)],
-			'paralyze' => ['id' => 1025, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new ParalyzeEnchant(...$a)],
-			'berserk' => ['id' => 1026, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new BerserkEnchant(...$a)],
-			'featherweight' => ['id' => 1027, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new FeatherweightEnchant(...$a)],
-			'lifesteal' => ['id' => 1028, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new LifestealEnchant(...$a)],
-			'rebound' => ['id' => 1029, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new ReboundEnchant(...$a)],
-			'ravenous' => ['id' => 1030, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new RavenousEnchant(...$a)],
-			'devour' => ['id' => 1031, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new DevourEnchant(...$a)],
-			'doublestrike' => ['id' => 1032, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new DoubleStrikeEnchant(...$a)],
-			'critical' => ['id' => 1033, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new CriticalEnchant(...$a)],
-			'barbarian' => ['id' => 1034, 'flags' => [ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new BarbarianEnchant(...$a)],
-			'magnet' => ['id' => 1035, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new MagnetEnchant(...$a)],
-			'forcefield' => ['id' => 1036, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new ForcefieldEnchant(...$a)],
-			'disarm' => ['id' => 1037, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new DisarmEnchant(...$a)],
-			'disarmor' => ['id' => 1038, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new DisarmorEnchant(...$a)],
-			'fuddle' => ['id' => 1039, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new FuddleEnchant(...$a)],
-			'decapitation' => ['id' => 1040, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new DecapitationEnchant(...$a)],
-			'exalted' => ['id' => 1041, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new ExaltedEnchant(...$a)],
-			'epicness' => ['id' => 1042, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new EpicnessEnchant(...$a)],
-			'hasten' => ['id' => 1043, 'flags' => [ItemFlags::DIG], 'make' => static fn(mixed ...$a) => new HastenEnchant(...$a)],
-			'telepathy' => ['id' => 1044, 'flags' => [ItemFlags::DIG], 'make' => static fn(mixed ...$a) => new TelepathyEnchant(...$a)],
-			'trench' => ['id' => 1045, 'flags' => [ItemFlags::PICKAXE, ItemFlags::SHOVEL], 'make' => static fn(mixed ...$a) => new TrenchEnchant(...$a)],
-			'veinminer' => ['id' => 1046, 'flags' => [ItemFlags::PICKAXE], 'make' => static fn(mixed ...$a) => new VeinMinerEnchant(...$a)],
-			'timber' => ['id' => 1047, 'flags' => [ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new TimberEnchant(...$a)],
-			'replenish' => ['id' => 1048, 'flags' => [ItemFlags::PICKAXE], 'make' => static fn(mixed ...$a) => new ReplenishEnchant(...$a)],
-			'hellfire' => ['id' => 1050, 'flags' => [ItemFlags::BOW], 'make' => static fn(mixed ...$a) => new HellfireEnchant(...$a)],
-			'piercing' => ['id' => 1051, 'flags' => [ItemFlags::BOW], 'make' => static fn(mixed ...$a) => new PiercingEnchant(...$a)],
-			'archer' => ['id' => 1052, 'flags' => [ItemFlags::BOW], 'make' => static fn(mixed ...$a) => new ArcherEnchant(...$a)],
-			'snare' => ['id' => 1053, 'flags' => [ItemFlags::BOW], 'make' => static fn(mixed ...$a) => new SnareEnchant(...$a)],
-			'perish' => ['id' => 1054, 'flags' => [ItemFlags::BOW], 'make' => static fn(mixed ...$a) => new PerishEnchant(...$a)],
-			'virus' => ['id' => 1055, 'flags' => [ItemFlags::BOW], 'make' => static fn(mixed ...$a) => new VirusEnchant(...$a)],
-			'poisoned' => ['id' => 1056, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new PoisonedEnchant(...$a)],
-			'frozen' => ['id' => 1057, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new FrozenEnchant(...$a)],
-			'wither' => ['id' => 1058, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new WitherEnchant(...$a)],
-			'voodoo' => ['id' => 1059, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new VoodooEnchant(...$a)],
-			'curse' => ['id' => 1060, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new CurseEnchant(...$a)],
-			'unholy' => ['id' => 1061, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new UnholyEnchant(...$a)],
-			'divert' => ['id' => 1062, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new DivertEnchant(...$a)],
-			'angelic' => ['id' => 1063, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new AngelicEnchant(...$a)],
-			'molten' => ['id' => 1064, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new MoltenEnchant(...$a)],
-			'extinguish' => ['id' => 1065, 'flags' => [ItemFlags::LEGS], 'make' => static fn(mixed ...$a) => new ExtinguishEnchant(...$a)],
-			'springs' => ['id' => 1066, 'flags' => [ItemFlags::FEET], 'make' => static fn(mixed ...$a) => new SpringsEnchant(...$a)],
-			'obsidianshield' => ['id' => 1067, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new ObsidianshieldEnchant(...$a)],
-			'armored' => ['id' => 1068, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new ArmoredEnchant(...$a)],
-			'heavy' => ['id' => 1069, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new HeavyEnchant(...$a)],
-			'tank' => ['id' => 1070, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new TankEnchant(...$a)],
-			'dodge' => ['id' => 1071, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new DodgeEnchant(...$a)],
-			'arrowdeflect' => ['id' => 1072, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new ArrowDeflectEnchant(...$a)],
-			'creeperarmor' => ['id' => 1073, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new CreeperArmorEnchant(...$a)],
-			'jellylegs' => ['id' => 1074, 'flags' => [ItemFlags::FEET], 'make' => static fn(mixed ...$a) => new JellyLegsEnchant(...$a)],
-			'chunky' => ['id' => 1075, 'flags' => [ItemFlags::TORSO], 'make' => static fn(mixed ...$a) => new ChunkyEnchant(...$a)],
-			'reflect' => ['id' => 1076, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new ReflectEnchant(...$a)],
-			'phoenix' => ['id' => 1077, 'flags' => [ItemFlags::TORSO], 'make' => static fn(mixed ...$a) => new PhoenixEnchant(...$a)],
-			'vampire' => ['id' => 1078, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new VampireEnchant(...$a)],
-			'bleed' => ['id' => 1079, 'flags' => [ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new BleedEnchant(...$a)],
-			'permafrost' => ['id' => 1080, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new PermafrostEnchant(...$a)],
-			'ambit' => ['id' => 1081, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new AmbitEnchant(...$a)],
-			'cleave' => ['id' => 1082, 'flags' => [ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new CleaveEnchant(...$a)],
-			'immolation' => ['id' => 1083, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new ImmolationEnchant(...$a)],
-			'inflame' => ['id' => 1084, 'flags' => [ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new InflameEnchant(...$a)],
-			'replanter' => ['id' => 1085, 'flags' => [ItemFlags::HOE], 'make' => static fn(mixed ...$a) => new ReplanterEnchant(...$a)],
-			'rebreather' => ['id' => 1086, 'flags' => [ItemFlags::PICKAXE], 'make' => static fn(mixed ...$a) => new RebreatherEnchant(...$a)],
-			'planter' => ['id' => 1087, 'flags' => [ItemFlags::HOE], 'make' => static fn(mixed ...$a) => new PlanterEnchant(...$a)],
-			'carrotplanter' => ['id' => 1088, 'flags' => [ItemFlags::HOE], 'make' => static fn(mixed ...$a) => new CarrotPlanterEnchant(...$a)],
-			'potatoplanter' => ['id' => 1089, 'flags' => [ItemFlags::HOE], 'make' => static fn(mixed ...$a) => new PotatoPlanterEnchant(...$a)],
-			'launch' => ['id' => 1090, 'flags' => [ItemFlags::SWORD], 'make' => static fn(mixed ...$a) => new LaunchEnchant(...$a)],
-			'unbreakable' => ['id' => 1091, 'flags' => [ItemFlags::DIG, ItemFlags::TOOL], 'make' => static fn(mixed ...$a) => new UnbreakableEnchant(...$a)],
-			'abiding' => ['id' => 1092, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE], 'make' => static fn(mixed ...$a) => new AbidingEnchant(...$a)],
-			'reforged' => ['id' => 1093, 'flags' => [ItemFlags::SWORD, ItemFlags::DIG], 'make' => static fn(mixed ...$a) => new ReforgedEnchant(...$a)],
-			'immortal' => ['id' => 1094, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new ImmortalEnchant(...$a)],
-			'soulbound' => ['id' => 1095, 'flags' => [ItemFlags::ALL], 'make' => static fn(mixed ...$a) => new SoulboundEnchant(...$a)],
-			'implants' => ['id' => 1096, 'flags' => [ItemFlags::HEAD], 'make' => static fn(mixed ...$a) => new ImplantsEnchant(...$a)],
-			'wings' => ['id' => 1097, 'flags' => [ItemFlags::FEET], 'make' => static fn(mixed ...$a) => new WingsEnchant(...$a)],
-			'trickster' => ['id' => 1098, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new TricksterEnchant(...$a)],
-			'ragdoll' => ['id' => 1099, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new RagdollEnchant(...$a)],
-			'convulse' => ['id' => 1100, 'flags' => [ItemFlags::FEET], 'make' => static fn(mixed ...$a) => new ConvulseEnchant(...$a)],
-			'safeguard' => ['id' => 1101, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new SafeguardEnchant(...$a)],
-			'lucid' => ['id' => 1102, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new LucidEnchant(...$a)],
-			'disappear' => ['id' => 1103, 'flags' => [ItemFlags::ARMOR], 'make' => static fn(mixed ...$a) => new DisappearEnchant(...$a)],
-			'shockwave' => ['id' => 1104, 'flags' => [ItemFlags::TORSO], 'make' => static fn(mixed ...$a) => new ShockwaveEnchant(...$a)]
-		];
-	}
-
 	public const int MIN_SAFE_LOW_BYTE = 64;
 	public const int MAX_ID = 32767;
 
 	/** @var array<string, array<string, mixed>> */
 	private array $data;
 
-	/** Next ID to try when a definition's own ID can't be used. */
+	/** @var array<string, EnchantDefinition> */
+	private array $definitions = [];
+
+	/** @var array<string, array<string, mixed>> */
+	private array $configs = [];
+
+	/** @var array<string, Plugin> */
+	private array $owners = [];
+
+	/** @var array<string, Enchantment&CustomEnchantInterface> */
+	private array $registered = [];
+
+	/** @var array<int, string> */
+	private array $keysByObject = [];
+
+	/** @var array<string, array<string, string>>|null */
+	private ?array $conflictGraph = null;
+
 	private int $nextId = 1021;
 
-	/** @var array<string, int>*/
+	/** @var array<string, int> */
 	private array $idAssignments = [];
 
-	/** @var array<string, int>*/
+	/** @var array<string, int> */
 	private array $resolvedIds = [];
 
 	private bool $idsDirty = false;
 
-	/** @var array<string, array{color: string, weight: int}> */
+	/** @var array<string, array{name: string, color: string, weight: int}> */
 	private const array RARITY_DEFAULTS = [
-		'COMMON' => ['color' => '{gray}', 'weight' => 50],
-		'UNCOMMON' => ['color' => '{green}', 'weight' => 25],
-		'RARE' => ['color' => '{blue}', 'weight' => 15],
-		'EPIC' => ['color' => '{light_purple}', 'weight' => 10],
-		'LEGENDARY' => ['color' => '{gold}', 'weight' => 5],
-		'MASTERY' => ['color' => '{red}', 'weight' => 3],
-		'HEROIC' => ['color' => '{dark_red}', 'weight' => 0],
+		'COMMON' => ['name' => 'Common', 'color' => '{gray}', 'weight' => 50],
+		'UNCOMMON' => ['name' => 'Uncommon', 'color' => '{green}', 'weight' => 25],
+		'RARE' => ['name' => 'Rare', 'color' => '{blue}', 'weight' => 15],
+		'EPIC' => ['name' => 'Epic', 'color' => '{light_purple}', 'weight' => 10],
+		'LEGENDARY' => ['name' => 'Legendary', 'color' => '{gold}', 'weight' => 5],
+		'SOUL' => ['name' => 'Soul', 'color' => '{red}', 'weight' => 0],
+		'MASTERY' => ['name' => 'Mastery', 'color' => '{red}', 'weight' => 3],
+		'HEROIC' => ['name' => 'Heroic', 'color' => '{dark_red}', 'weight' => 0],
 	];
 
-	/** @var array<string, array{color: string, weight: int, enabled: bool}> */
+	/** @var array<string, array{name: string, color: string, weight: int, enabled: bool}> */
 	private static array $raritySettings = [];
-
-	/** @var array<string, Enchantment> */
-	private array $registered = [];
 
 	public function __construct(
 		private readonly Main $plugin
@@ -310,15 +90,270 @@ final class EnchantManager{
 		$this->data = $this->loadData();
 		$this->loadIdAssignments();
 
-		$this->registerEnchants();
+		foreach(DefaultEnchants::all() as $definition){
+			$this->register($definition, null, $this->data[$definition->key] ?? []);
+		}
 
 		ItemRegistry::init();
 		EnchantPlaceholders::register($this);
 	}
 
 	/**
-	 * @return array<string, array<string, mixed>>
+	 * @param array<string, mixed> $config
+	 * @return (Enchantment&CustomEnchantInterface)|null
+	 * @throws InvalidArgumentException
 	 */
+	public function register(EnchantDefinition $definition, ?Plugin $owner = null, array $config = []) : ?Enchantment{
+		$key = $definition->key;
+		if(isset($this->definitions[$key])){
+			$by = isset($this->owners[$key]) ? $this->owners[$key]->getName() : $this->plugin->getName();
+			throw new InvalidArgumentException("Enchant '$key' is already registered by $by.");
+		}
+
+		$config = array_replace($this->defaultData($key), $definition->defaults, $config);
+		$definition = $definition->withConfig($config);
+
+		$this->definitions[$key] = $definition;
+		$this->configs[$key] = $config;
+		if($owner !== null){
+			$this->owners[$key] = $owner;
+		}
+		$this->conflictGraph = null;
+
+		if(($config['enabled'] ?? true) !== true){
+			return null;
+		}
+
+		$source = $owner?->getName() ?? $this->plugin->getName();
+		try{
+			$enchant = ($definition->factory)(
+				(string) ($config['display_name'] ?? $key),
+				Rarity::fromName((string) ($config['rarity'] ?? 'COMMON'))->value,
+				(string) ($config['description'] ?? ''),
+				max(1, (int) ($config['max_level'] ?? 1)),
+			);
+			if(!$enchant instanceof Enchantment || !$enchant instanceof CustomEnchantInterface){
+				throw new RuntimeException('factory must return an Enchantment implementing CustomEnchantInterface');
+			}
+
+			if(($config['has_chance'] ?? false) === true){
+				$enchant->setBaseChance((float) ($config['chance'] ?? $config['base_chance'] ?? 0.1));
+			}
+
+			$id = $this->resolveId($key, $definition->id);
+			EnchantmentIdMap::getInstance()->register($id, $enchant);
+		}catch(Throwable $exception){
+			$this->plugin->getLogger()->error("[$source] Could not register enchant '$key': {$exception->getMessage()}");
+			return null;
+		}finally{
+			$this->saveIdAssignments();
+		}
+
+		$this->resolvedIds[$key] = $id;
+		$this->registered[$key] = $enchant;
+		$this->keysByObject[spl_object_id($enchant)] = $key;
+
+		return $enchant;
+	}
+
+	public function check(Item $item, string $key, int $level) : ApplyResult{
+		$key = self::normalizeKey($key);
+		$enchant = $this->registered[$key] ?? null;
+		if($enchant === null){
+			return ApplyResult::fail(ApplyStatus::UNKNOWN);
+		}
+		if(!$this->canApply($key, $item)){
+			return ApplyResult::fail(ApplyStatus::INCOMPATIBLE_ITEM);
+		}
+		if($level > $enchant->getMaxLevel()){
+			return ApplyResult::fail(ApplyStatus::LEVEL_TOO_HIGH, null, $enchant->getMaxLevel());
+		}
+
+		$definition = $this->definitions[$key];
+		$present = $this->getKeysOnItem($item);
+		$upgrading = isset($present[$key]);
+		unset($present[$key]);
+
+		$conflicts = $this->conflictGraph()[$key] ?? [];
+		foreach($present as $other => $_level){
+			if(isset($conflicts[$other])){
+				return ApplyResult::fail(ApplyStatus::CONFLICT, $other);
+			}
+			if(in_array($key, $this->definitions[$other]->replaces ?? [], true)){
+				return ApplyResult::fail(ApplyStatus::CONFLICT, $other);
+			}
+		}
+
+		if(!$upgrading){
+			foreach($definition->requires as $required => $minLevel){
+				if(($present[$required] ?? 0) < $minLevel){
+					return ApplyResult::fail(ApplyStatus::MISSING_REQUIREMENT, $required, $minLevel);
+				}
+			}
+		}
+
+		return ApplyResult::ok();
+	}
+
+	public function apply(Item $item, string $key, int $level, bool $force = false) : ApplyResult{
+		$key = self::normalizeKey($key);
+		$result = $this->check($item, $key, $level);
+
+		if(!$result->isOk() && !($force && $result->status->isBypassable())){
+			return $result;
+		}
+
+		foreach($this->definitions[$key]->replaces as $replaced){
+			$old = $this->registered[$replaced] ?? null;
+			if($old !== null && $item->hasEnchantment($old)){
+				$item->removeEnchantment($old);
+			}
+		}
+
+		$item->addEnchantment(new EnchantmentInstance($this->registered[$key], $level));
+		$this->rebuildLore($item);
+
+		return $result;
+	}
+
+	public function sendResult(Player $player, ApplyResult $result, string $key, int $level) : void{
+		$key = self::normalizeKey($key);
+		MessageService::send($player, $result->status->messageKey(), [
+			'enchant_name' => $this->displayName($key),
+			'level' => $level,
+			'max_level' => $result->level,
+			'other_name' => $result->other !== null ? $this->displayName($result->other) : '',
+			'required_level' => $result->level,
+		]);
+	}
+
+	/** @return array<string, int> */
+	public function getKeysOnItem(Item $item) : array{
+		$out = [];
+		foreach($item->getEnchantments() as $instance){
+			$key = $this->keyOf($instance->getType());
+			if($key !== null){
+				$out[$key] = $instance->getLevel();
+			}
+		}
+		return $out;
+	}
+
+	/** @return list<array{0: string, 1: string}> */
+	public function findConflictsOnItem(Item $item) : array{
+		$keys = array_keys($this->getKeysOnItem($item));
+		$graph = $this->conflictGraph();
+		$pairs = [];
+		foreach($keys as $i => $a){
+			foreach(array_slice($keys, $i + 1) as $b){
+				if(isset($graph[$a][$b])){
+					$pairs[] = [$a, $b];
+				}
+			}
+		}
+		return $pairs;
+	}
+
+	/** @return array<string, array<string, string>> */
+	private function conflictGraph() : array{
+		if($this->conflictGraph !== null){
+			return $this->conflictGraph;
+		}
+
+		$graph = [];
+		foreach($this->definitions as $key => $definition){
+			foreach($definition->conflicts as $other){
+				if($other === $key){
+					continue;
+				}
+				$graph[$key][$other] = $other;
+				$graph[$other][$key] = $key;
+			}
+		}
+
+		return $this->conflictGraph = $graph;
+	}
+
+	public static function normalizeKey(string $key) : string{
+		return strtolower(str_replace([' ', '-', '_'], '', $key));
+	}
+
+	public function getByKey(string $key) : ?Enchantment{
+		return $this->registered[self::normalizeKey($key)] ?? null;
+	}
+
+	public function keyOf(Enchantment $enchant) : ?string{
+		return $this->keysByObject[spl_object_id($enchant)] ?? null;
+	}
+
+	public function getDefinition(string $key) : ?EnchantDefinition{
+		return $this->definitions[self::normalizeKey($key)] ?? null;
+	}
+
+	/** @return array<string, EnchantDefinition> */
+	public function getDefinitions() : array{
+		return $this->definitions;
+	}
+
+	public function getOwner(string $key) : ?Plugin{
+		return $this->owners[self::normalizeKey($key)] ?? null;
+	}
+
+	/** @return list<string> */
+	public function getConflicts(string $key) : array{
+		return array_values($this->conflictGraph()[self::normalizeKey($key)] ?? []);
+	}
+
+	/** @return list<array{0: string, 1: string}> */
+	public function getConflictPairs() : array{
+		$pairs = [];
+		foreach($this->conflictGraph() as $a => $others){
+			foreach($others as $b){
+				if(strcmp($a, $b) < 0){
+					$pairs[] = [$a, $b];
+				}
+			}
+		}
+		sort($pairs);
+		return $pairs;
+	}
+
+	public function displayName(string $key) : string{
+		$key = self::normalizeKey($key);
+		$enchant = $this->registered[$key] ?? null;
+		if($enchant !== null){
+			$name = $enchant->getName();
+			return $name instanceof Translatable ? $name->getText() : $name;
+		}
+		return (string) ($this->configs[$key]['display_name'] ?? $key);
+	}
+
+	public function getIdByKey(string $key) : ?int{
+		$key = self::normalizeKey($key);
+
+		return $this->resolvedIds[$key] ?? $this->definitions[$key]?->id;
+	}
+
+	/** @return array<string, Enchantment&CustomEnchantInterface> */
+	public function getEnabled() : array{
+		return $this->registered;
+	}
+
+	public function canApply(string $key, Item $item) : bool{
+		$key = self::normalizeKey($key);
+		$definition = $this->definitions[$key] ?? null;
+
+		if($definition === null || !isset($this->registered[$key])){
+			return false;
+		}
+
+		return ItemEnchantmentTagRegistry::getInstance()->isTagArrayIntersection(
+			$definition->tags,
+			$item->getEnchantmentTags()
+		);
+	}
+
+	/** @return array<string, array<string, mixed>> */
 	private function loadData() : array{
 		$path = $this->plugin->getDataFolder() . 'enchantments.json';
 
@@ -335,18 +370,17 @@ final class EnchantManager{
 			);
 		}
 
-		foreach(self::definitions() as $key => $_definition){
-			if(!isset($decoded[$key]) || !is_array($decoded[$key])){
-				$decoded[$key] = $this->defaultData($key);
+		$data = [];
+		foreach($decoded as $key => $entry){
+			if(is_string($key) && is_array($entry)){
+				$data[self::normalizeKey($key)] = $entry;
 			}
 		}
 
-		return $decoded;
+		return $data;
 	}
 
-	/**
-	 * @return array<string, mixed>
-	 */
+	/** @return array<string, mixed> */
 	private function defaultData(string $key) : array{
 		return [
 			'enabled' => true,
@@ -359,72 +393,45 @@ final class EnchantManager{
 		];
 	}
 
-	/**
-	 * @param array<string, mixed> $data
-	 * @param list<int> $flags
-	 */
-	private function createEnchantment(
-		string $key,
-		array $data,
-		array $flags
-	) : Enchantment|CustomEnchantInterface {
-		$arguments = [
-			(string) ($data['display_name'] ?? $key),
-			Rarity::fromName((string) ($data['rarity'] ?? 'COMMON'))->value,
-			(string) ($data['description'] ?? ''),
-			max(1, (int) ($data['max_level'] ?? 1)),
-			...$flags
-		];
+	private function loadRarities() : void{
+		$config = $this->plugin->getConfig()->get('rarities', []);
+		$config = is_array($config) ? $config : [];
 
-		$make = self::definitions()[$key]['make'] ?? throw new RuntimeException("Unknown enchantment: $key");
+		self::$raritySettings = [];
+		foreach(Rarity::cases() as $rarity){
+			$section = $config[$rarity->name] ?? [];
+			$section = is_array($section) ? $section : [];
+			$defaults = self::RARITY_DEFAULTS[$rarity->name];
 
-		return $make(...$arguments);
+			self::$raritySettings[$rarity->name] = [
+				'name' => (string) ($section['display_name'] ?? $defaults['name']),
+				'color' => (string) ($section['display_color'] ?? $defaults['color']),
+				'weight' => (int) ($section['weight'] ?? $defaults['weight']),
+				'enabled' => (bool) ($section['enabled'] ?? true),
+			];
+		}
 	}
 
-	/**
-	 * Register enabled enchantments.
-	 */
-	private function registerEnchants() : void{
-		foreach(self::definitions() as $key => $definition){
-			$data = $this->data[$key];
+	public static function rarityName(Rarity $rarity) : string{
+		return self::$raritySettings[$rarity->name]['name'] ?? self::RARITY_DEFAULTS[$rarity->name]['name'];
+	}
 
-			if(($data['enabled'] ?? true) !== true){
-				continue;
-			}
+	public static function rarityColor(Rarity $rarity) : string{
+		return self::$raritySettings[$rarity->name]['color'] ?? self::RARITY_DEFAULTS[$rarity->name]['color'];
+	}
 
-			try{
-				$enchant = $this->createEnchantment(
-					$key,
-					$data,
-					$definition['flags']
-				);
+	public static function rarityWeight(Rarity $rarity) : int{
+		return self::$raritySettings[$rarity->name]['weight'] ?? self::RARITY_DEFAULTS[$rarity->name]['weight'];
+	}
 
-				if(($data['has_chance'] ?? false) === true){
-					$enchant->setBaseChance(
-						(float) ($data['chance'] ?? $data['base_chance'] ?? 0.1)
-					);
-				}
-
-				$id = $this->resolveId($key, $definition['id']);
-
-				EnchantmentIdMap::getInstance()->register($id, $enchant);
-
-				$this->resolvedIds[$key] = $id;
-				$this->registered[$key] = $enchant;
-			}catch(Throwable $exception){
-				$this->plugin->getLogger()->error(
-					"Could not register $key: {$exception->getMessage()}"
-				);
-			}
-		}
-
-		$this->saveIdAssignments();
+	public static function isRarityEnabled(Rarity $rarity) : bool{
+		return self::$raritySettings[$rarity->name]['enabled'] ?? true;
 	}
 
 	private function resolveId(string $key, int $defaultId) : int{
 		$id = $this->idAssignments[$key] ?? $defaultId;
 
-		if(self::isSafeId($id) && EnchantmentIdMap::getInstance()->fromId($id) === null){
+		if(self::isSafeId($id) && EnchantmentIdMap::getInstance()->fromId($id) === null && !$this->isIdReservedByOther($id, $key)){
 			return $id;
 		}
 
@@ -440,12 +447,41 @@ final class EnchantManager{
 		return $id;
 	}
 
+	private function isIdReservedByOther(int $id, string $key) : bool{
+		foreach($this->defaultIds() as $other => $defaultId){
+			if($other !== $key && $defaultId === $id && !isset($this->idAssignments[$other])){
+				return true;
+			}
+		}
+		foreach($this->idAssignments as $other => $assigned){
+			if($other !== $key && $assigned === $id){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** @return array<string, int> */
+	private function defaultIds() : array{
+		$ids = [];
+		foreach(DefaultEnchants::all() as $definition){
+			$ids[$definition->key] = $definition->id;
+		}
+		foreach($this->definitions as $key => $definition){
+			$ids[$key] = $definition->id;
+		}
+		return $ids;
+	}
+
 	public static function isSafeId(int $id) : bool{
 		return $id >= 1 && $id <= self::MAX_ID && ($id & 0xFF) >= self::MIN_SAFE_LOW_BYTE;
 	}
 
 	private function nextFreeId() : int{
-		$reserved = [...array_column(self::definitions(), 'id'), ...array_values($this->idAssignments)];
+		$reserved = [
+			...array_values($this->defaultIds()),
+			...array_values($this->idAssignments),
+		];
 		$id = max(1021, $this->nextId);
 
 		while(
@@ -481,11 +517,11 @@ final class EnchantManager{
 			return;
 		}
 
-		$defaultIds = array_column(self::definitions(), 'id');
+		$defaultIds = array_map(static fn(EnchantDefinition $d) : int => $d->id, DefaultEnchants::all());
 
 		foreach($saved as $key => $id){
 			$problem = match(true){
-				!is_string($key) || !isset(self::definitions()[$key]) => 'is not a known enchant any more',
+				!is_string($key) || $key === '' => 'has an invalid key',
 				!is_int($id) || !self::isSafeId($id) => 'is not a safe ID',
 				in_array($id, $defaultIds, true) || in_array($id, $this->idAssignments, true) => 'collides with another enchant',
 				EnchantmentIdMap::getInstance()->fromId($id) !== null => 'is now used by another enchant',
@@ -530,118 +566,6 @@ final class EnchantManager{
 		$this->idsDirty = false;
 	}
 
-	private function loadRarities() : void{
-		$config = $this->plugin->getConfig()->get('rarities', []);
-		$config = is_array($config) ? $config : [];
-
-		self::$raritySettings = [];
-		foreach(Rarity::cases() as $rarity){
-			$section = $config[$rarity->name] ?? [];
-			$section = is_array($section) ? $section : [];
-			$defaults = self::RARITY_DEFAULTS[$rarity->name];
-
-			self::$raritySettings[$rarity->name] = [
-				'color' => (string) ($section['display_color'] ?? $defaults['color']),
-				'weight' => (int) ($section['weight'] ?? $defaults['weight']),
-				'enabled' => (bool) ($section['enabled'] ?? true),
-			];
-		}
-	}
-
-	public static function rarityColor(Rarity $rarity) : string{
-		return self::$raritySettings[$rarity->name]['color'] ?? self::RARITY_DEFAULTS[$rarity->name]['color'];
-	}
-
-	public static function rarityWeight(Rarity $rarity) : int{
-		return self::$raritySettings[$rarity->name]['weight'] ?? self::RARITY_DEFAULTS[$rarity->name]['weight'];
-	}
-
-	public static function isRarityEnabled(Rarity $rarity) : bool{
-		return self::$raritySettings[$rarity->name]['enabled'] ?? true;
-	}
-
-	/**
-	 * Normalize an internal enchantment key.
-	 */
-	public static function normalizeKey(string $key) : string{
-		return strtolower(str_replace([' ', '-'], '', $key));
-	}
-
-	/**
-	 * Get an enchantment by its permanent internal key.
-	 */
-	public function getByKey(string $key) : ?Enchantment{
-		return $this->registered[self::normalizeKey($key)] ?? null;
-	}
-
-	/**
-	 * Get the numeric ID an enchantment is actually registered under (which differs from definitions()
-	 * when the default ID was unsafe or taken).
-	 */
-	public function getIdByKey(string $key) : ?int{
-		$key = self::normalizeKey($key);
-
-		return $this->resolvedIds[$key] ?? self::definitions()[$key]['id'] ?? null;
-	}
-
-	/**
-	 * Get all enabled enchantments.
-	 *
-	 * @return array<string, Enchantment>
-	 */
-	public function getEnabled() : array{
-		return $this->registered;
-	}
-
-	/**
-	 * Check whether an enchantment can be applied to an item.
-	 */
-	public function canApply(string $key, Item $item) : bool{
-		$key = self::normalizeKey($key);
-
-		$definition = self::definitions()[$key] ?? null;
-
-		if($definition === null || $this->getByKey($key) === null){
-			return false;
-		}
-
-		$itemFlags = self::getItemFlags($item);
-
-		foreach($definition['flags'] as $flag){
-			if(($itemFlags & $flag) !== 0){
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Determine an item's enchantment flags.
-	 */
-	private static function getItemFlags(Item $item) : int{
-		return match(true){
-			$item instanceof Sword => ItemFlags::SWORD,
-			$item instanceof Bow => ItemFlags::BOW,
-			$item instanceof Pickaxe => ItemFlags::PICKAXE | ItemFlags::DIG | ItemFlags::TOOL,
-			$item instanceof Axe => ItemFlags::AXE | ItemFlags::DIG | ItemFlags::TOOL,
-			$item instanceof Shovel => ItemFlags::SHOVEL | ItemFlags::DIG | ItemFlags::TOOL,
-			$item instanceof Hoe => ItemFlags::HOE | ItemFlags::DIG | ItemFlags::TOOL,
-			$item instanceof Tool => ItemFlags::DIG | ItemFlags::TOOL,
-			$item instanceof Armor => ItemFlags::ARMOR | match($item->getArmorSlot()){
-					ArmorInventory::SLOT_HEAD => ItemFlags::HEAD,
-					ArmorInventory::SLOT_CHEST => ItemFlags::TORSO,
-					ArmorInventory::SLOT_LEGS => ItemFlags::LEGS,
-					ArmorInventory::SLOT_FEET => ItemFlags::FEET,
-					default => ItemFlags::NONE
-				},
-			default => ItemFlags::NONE
-		};
-	}
-
-	/**
-	 * Rebuild custom enchantment lore.
-	 */
 	public function rebuildLore(Item $item) : Item{
 		if($item->getNamedTag()->getTag('hideEnchantments') !== null){
 			return $item;
@@ -705,9 +629,6 @@ final class EnchantManager{
 		return $item;
 	}
 
-	/**
-	 * Convert an integer to Roman numerals.
-	 */
 	public static function intToRoman(int $number) : string{
 		$map = [
 			'M' => 1000,

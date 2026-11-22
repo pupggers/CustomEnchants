@@ -13,6 +13,8 @@ enum Rarity: int
 	case RARE = 3;
 	case EPIC = 4;
 	case LEGENDARY = 5;
+	// Value 8 so existing items keep their stored rarities; listed here for tier order.
+	case SOUL = 8;
 	case MASTERY = 6;
 	case HEROIC = 7;
 
@@ -40,7 +42,7 @@ enum Rarity: int
 
 	public function label(): string
 	{
-		return ucfirst(strtolower($this->name));
+		return EnchantManager::rarityName($this);
 	}
 
 	public function color(): string { return EnchantManager::rarityColor($this); }

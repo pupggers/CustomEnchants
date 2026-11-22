@@ -17,3 +17,6 @@ permissions:
   enchant.command.test:
     default: op
     description: Test Enchants
+  enchant.command.addon:
+    default: op
+    description: Install, list or remove enchant addons (downloads code from GitHub)
