@@ -15,12 +15,16 @@ class ExperienceEnchant extends ToolEnchant
 {
 
     /**
+	 * @param Player $player
+	 * @param Item $item
+	 * @param Block $block
+	 * @param Event|null $event
+	 * @param int $level
      * @throws RandomException
      */
-    public function execute(Player $player, Item $item, Block $block, ?Event $event)
+    public function execute(Player $player, Item $item, Block $block, ?Event $event, int $level)
     : void
     {
-        $level = $item->getEnchantment($this)->getLevel();
         $chance = $this->getChance($level, $this->getMaxLevel());
 
         if(random_int(1, 100) <= $chance){

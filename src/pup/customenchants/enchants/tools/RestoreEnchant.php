@@ -18,7 +18,7 @@ use pup\customenchants\types\ToolEnchant;
 class RestoreEnchant extends ToolEnchant
 {
 
-    public function execute(Player $player, Item $item, Block $block, ?Event $event): void {
+    public function execute(Player $player, Item $item, Block $block, ?Event $event, int $level): void {
         if (!$item instanceof Tool) {
             return;
         }
@@ -36,7 +36,6 @@ class RestoreEnchant extends ToolEnchant
         if ($enchantId !== null) {
             $newItem->removeEnchantment($enchantId);
         }
-        //Interfering with drill, doesnt repair when using drill
 
         $restoredDurability = (int) ($maxDurability / 2);
         $newItem->setDamage($restoredDurability);
