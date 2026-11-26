@@ -18,10 +18,5 @@
 	"require-dev": {
 		"axolotl-pm/pocketmine-mp": "5.51.1"
 	},
-	"minimum-stability": "dev",
-	"scripts": {
-		"doctor": "@php ../DevTools/bin/devtools.php doctor --project=. --virions=virions-prepared",
-		"prepare": "@php ../DevTools/bin/devtools.php prepare --project=. --virions=virions-prepared",
-		"build": "@php -d phar.readonly=0 ../DevTools/bin/devtools.php build --project=. --virions=virions-prepared --out=.. --overwrite"
-	}
+	"minimum-stability": "dev"
 }
