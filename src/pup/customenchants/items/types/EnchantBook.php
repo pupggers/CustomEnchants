@@ -6,10 +6,11 @@ use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\player\Player;
 use pup\customenchants\items\CustomItem;
-use pup\customenchants\items\ItemRegistry;
 use pup\customenchants\items\interface\ItemInteractInterface;
-use pup\customenchants\utils\Rarity;
+use pup\customenchants\items\ItemRegistry;
 use pup\customenchants\Main;
+use pup\customenchants\utils\Rarity;
+use pup\customenchants\utils\Settings;
 use Random\RandomException;
 
 final class EnchantBook extends CustomItem implements ItemInteractInterface
@@ -25,8 +26,9 @@ final class EnchantBook extends CustomItem implements ItemInteractInterface
             ->setString(self::CUSTOM_ITEM_ID, "random_enchant_book")
             ->setInt("rarity", $rarity);
 
-        $color = Rarity::getColor($rarity);
-        $rarityName = Rarity::getName($rarity);
+        $rarityEnum = Rarity::fromValue($rarity);
+        $color = $rarityEnum->color();
+        $rarityName = $rarityEnum->label();
 
         $replacements = ['rarity_color' => $color, 'rarity_name' => $rarityName];
         parent::__construct('random_enchant_book', ItemRegistry::getName('random_enchant_book', 'Enchantment Book ({rarity_name})', $replacements), ItemRegistry::getLore('random_enchant_book', ['Right-click to use'], $replacements), $item);
@@ -37,10 +39,6 @@ final class EnchantBook extends CustomItem implements ItemInteractInterface
      */
     public function onInteract(Item $item, Player $player): void
     {
-        $config = Main::getInstance()->getConfig();
-        $chanceEnabled = $config->get("book_chance", true);
-        $baseChance = random_int(1, 100);
-
         $enchantments = $this->getEnchantmentsByRarity($this->rarity);
 
         if (empty($enchantments)) {
@@ -53,7 +51,6 @@ final class EnchantBook extends CustomItem implements ItemInteractInterface
             $amountToProcess = $item->getCount();
         }
 
-        $successCount = 0;
         $itemsToGive = [];
 
         for ($i = 0; $i < $amountToProcess; $i++) {
@@ -61,22 +58,18 @@ final class EnchantBook extends CustomItem implements ItemInteractInterface
 
             $enchantmentBook = new EnchantmentBook(
                 $randomEnchant,
-                1);
+                Settings::bookLevel(Rarity::fromValue($this->rarity)->name, $randomEnchant->getMaxLevel()));
 
             $itemsToGive[] = $enchantmentBook->getItem();
         }
 
         $result = $player->getInventory()->addItem(...$itemsToGive);
 
-        $successCount = count($itemsToGive) - count($result);
+        $item->setCount($item->getCount() - $amountToProcess);
+        $player->getInventory()->setItemInHand($item->getCount() > 0 ? $item : VanillaItems::AIR());
 
-        if ($successCount > 0) {
-            $item->setCount($item->getCount() - $successCount);
-            $player->getInventory()->setItemInHand($item->getCount() > 0 ? $item : VanillaItems::AIR());
-
-            if ($successCount > 1) {
-                Main::getInstance()->getMessages()->send($player, 'books_created', ['amount' => $successCount]);
-            }
+        if ($amountToProcess > 1) {
+            Main::getInstance()->getMessages()->send($player, 'books_created', ['amount' => $amountToProcess]);
         }
 
         if (!empty($result)) {

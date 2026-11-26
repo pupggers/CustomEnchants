@@ -7,12 +7,11 @@ use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\item\enchantment\VanillaEnchantments;
-use pup\customenchants\EnchantManager;
-use pup\customenchants\Main;
 use pup\customenchants\items\interface\InventoryTransactionInterface;
 use pup\customenchants\items\interface\ItemInteractInterface;
 use pup\customenchants\items\types\EnchantBook;
 use pup\customenchants\items\types\EnchantmentBook;
+use pup\customenchants\Main;
 use pup\customenchants\utils\Rarity;
 use Random\RandomException;
 use Throwable;
@@ -97,6 +96,11 @@ final class ItemListener implements Listener
                 $rarity = $itemClicked->getNamedTag()->getInt("rarity", Rarity::COMMON);
                 $customItem = new EnchantBook($rarity);
                 $customItem->onInteract($itemClicked, $player);
+            } elseif ($customItemId === "magic_dust") {
+                $magicDust = ItemRegistry::getAll()["magic_dust"] ?? null;
+                if ($magicDust instanceof ItemInteractInterface) {
+                    $magicDust->onInteract($itemClicked, $player);
+                }
             }
         }
     }
