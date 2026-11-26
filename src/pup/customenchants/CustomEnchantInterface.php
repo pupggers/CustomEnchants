@@ -10,6 +10,8 @@ interface CustomEnchantInterface
 
     public function setBaseChance(float $chance): void;
 
+    public function setMaxChance(float $chance): void;
+
     public function getChance(int $currentLevel, int $maxLevel): float;
 
     public function roll(int $level, float $bonusPercent = 0.0): bool;

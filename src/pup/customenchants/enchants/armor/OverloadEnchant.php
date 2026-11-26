@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace pup\customenchants\enchants\armor;
-
 
 use pocketmine\item\Item;
 use pocketmine\player\Player;
@@ -10,18 +10,13 @@ use pup\customenchants\types\ToggledArmorEnchant;
 
 class OverloadEnchant extends ToggledArmorEnchant
 {
-
-    public function onEquip(Player $player, Item $item, int $level)
-    : void
+    public function onEquip(Player $player, Item $item, int $level, int $slot): void
     {
-        $player->setMaxHealth($player->getMaxHealth() + ($level * 2));
+        $this->setHealthBonus($player, $slot, 2 * $level);
     }
 
-    public function onDequip(Player $player, Item $item, int $level)
-    : void
+    public function onDequip(Player $player, Item $item, int $level, int $slot): void
     {
-        if ($player->getMaxHealth() > 20) {
-            $player->setMaxHealth($player->getMaxHealth() - ($level * 2));
-        }
+        $this->setHealthBonus($player, $slot, 0);
     }
 }

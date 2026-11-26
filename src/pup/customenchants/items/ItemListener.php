@@ -93,7 +93,7 @@ final class ItemListener implements Listener
 
             $customItemId = $itemClicked->getNamedTag()->getString("customItem");
             if ($customItemId === "random_enchant_book") {
-                $rarity = $itemClicked->getNamedTag()->getInt("rarity", Rarity::COMMON->value);
+                $rarity = $itemClicked->getNamedTag()->getInt("rarity", Rarity::COMMON);
                 $customItem = new EnchantBook($rarity);
                 $customItem->onInteract($itemClicked, $player);
             } elseif ($customItemId === "magic_dust") {

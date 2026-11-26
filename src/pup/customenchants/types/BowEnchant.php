@@ -31,7 +31,7 @@ abstract class BowEnchant extends CustomEnchant
 		if (!$shooter instanceof Player || $bow === null) {
 			return;
 		}
-		foreach (EnchantScan::of($bow, static fn(object $e): bool => $e instanceof self) as [$enchant, $level]) {
+		foreach (EnchantScan::of($bow, static fn(object $e): bool => $e instanceof self, $shooter) as [$enchant, $level]) {
 			$enchant->execute($shooter, $bow, $arrow, $level);
 		}
 	}

@@ -10,21 +10,21 @@ use pocketmine\item\enchantment\Enchantment;
 use pup\customenchants\CustomEnchantInterface;
 use pup\customenchants\EnchantManager;
 
-final class EnchantDefinition
+final readonly class EnchantDefinition
 {
-	public readonly string $key;
+	public string $key;
 
 	/** @var list<string> */
-	public readonly array $tags;
+	public array $tags;
 
 	/** @var list<string> */
-	public readonly array $conflicts;
+	public array $conflicts;
 
 	/** @var array<string, int> */
-	public readonly array $requires;
+	public array $requires;
 
 	/** @var list<string> */
-	public readonly array $replaces;
+	public array $replaces;
 
 	/**
 	 * @param list<string> $tags
@@ -35,14 +35,14 @@ final class EnchantDefinition
 	 * @param array<string, mixed> $defaults
 	 */
 	public function __construct(
-		string $key,
-		public readonly int $id,
-		array $tags,
-		public readonly Closure $factory,
-		array $conflicts = [],
-		array $requires = [],
-		array $replaces = [],
-		public readonly array $defaults = [],
+		string         $key,
+		public int     $id,
+		array          $tags,
+		public Closure $factory,
+		array          $conflicts = [],
+		array          $requires = [],
+		array          $replaces = [],
+		public array   $defaults = [],
 	) {
 		$this->key = EnchantManager::normalizeKey($key);
 		if ($this->key === '') {

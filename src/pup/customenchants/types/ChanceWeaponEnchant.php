@@ -9,6 +9,7 @@ use pocketmine\entity\Living;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\player\Player;
+use pup\customenchants\utils\EnchantBlocker;
 use pup\customenchants\utils\EnchantTasks;
 
 abstract class ChanceWeaponEnchant extends WeaponEnchant
@@ -30,7 +31,7 @@ abstract class ChanceWeaponEnchant extends WeaponEnchant
 
 	public function onPostAttack(Entity $attacker, Entity $victim, int $enchantmentLevel): void
 	{
-		if (!$attacker instanceof Player || !$victim instanceof Living) {
+		if (!$attacker instanceof Player || !$victim instanceof Living || EnchantBlocker::isBlocked($attacker, $this)) {
 			return;
 		}
 		if ($this->requiresRoll() && !$this->roll($enchantmentLevel)) {
@@ -76,7 +77,7 @@ abstract class ChanceWeaponEnchant extends WeaponEnchant
 	protected function bleed(Player $attacker, Living $victim, int $seconds, float $damage = 1.0): void
 	{
 		EnchantTasks::repeatTimes(20, $seconds, function () use ($attacker, $victim, $damage): bool {
-			if ($victim->isClosed() || !$victim->isAlive()) {
+			if ($victim->isClosed() || !$victim->isAlive() || $attacker->isClosed()) {
 				return false;
 			}
 			$this->dealExtraDamage($attacker, $victim, $damage);

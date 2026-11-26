@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace pup\customenchants\enchants\armor;
 
-use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
@@ -12,13 +11,13 @@ use pup\customenchants\types\ToggledArmorEnchant;
 
 class ObsidianshieldEnchant extends ToggledArmorEnchant
 {
-    public function onEquip(Player $player, Item $item, int $level): void
+    public function onEquip(Player $player, Item $item, int $level, int $slot): void
     {
-        $player->getEffects()->add(new EffectInstance(VanillaEffects::FIRE_RESISTANCE(), 2147483647, 0, true, false, null, true));
+        $this->grantEffect($player, $slot, VanillaEffects::FIRE_RESISTANCE(), 0);
     }
 
-    public function onDequip(Player $player, Item $item, int $level): void
+    public function onDequip(Player $player, Item $item, int $level, int $slot): void
     {
-        $player->getEffects()->remove(VanillaEffects::FIRE_RESISTANCE());
+        $this->revokeEffect($player, $slot, VanillaEffects::FIRE_RESISTANCE());
     }
 }

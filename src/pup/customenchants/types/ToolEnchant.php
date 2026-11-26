@@ -24,7 +24,7 @@ abstract class ToolEnchant extends CustomEnchant
 
 		EnchantGuard::run('break:' . $player->getId(), static function () use ($event, $player): void {
 			$item = $event->getItem();
-			foreach (EnchantScan::of($item, static fn(object $e): bool => $e instanceof self) as [$enchant, $level]) {
+			foreach (EnchantScan::of($item, static fn(object $e): bool => $e instanceof self, $player) as [$enchant, $level]) {
 				$enchant->execute($event->getPlayer(), $item, $event->getBlock(), $event, $level);
 			}
 		});

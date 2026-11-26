@@ -66,27 +66,13 @@ final class EnchantManager{
 
 	private bool $idsDirty = false;
 
-	/** @var array<string, array{name: string, color: string, weight: int}> */
-	private const array RARITY_DEFAULTS = [
-		'COMMON' => ['name' => 'Common', 'color' => '{gray}', 'weight' => 50],
-		'UNCOMMON' => ['name' => 'Uncommon', 'color' => '{green}', 'weight' => 25],
-		'RARE' => ['name' => 'Rare', 'color' => '{blue}', 'weight' => 15],
-		'EPIC' => ['name' => 'Epic', 'color' => '{light_purple}', 'weight' => 10],
-		'LEGENDARY' => ['name' => 'Legendary', 'color' => '{gold}', 'weight' => 5],
-		'SOUL' => ['name' => 'Soul', 'color' => '{red}', 'weight' => 0],
-		'MASTERY' => ['name' => 'Mastery', 'color' => '{red}', 'weight' => 3],
-		'HEROIC' => ['name' => 'Heroic', 'color' => '{dark_red}', 'weight' => 0],
-	];
-
-	/** @var array<string, array{name: string, color: string, weight: int, enabled: bool}> */
-	private static array $raritySettings = [];
-
 	public function __construct(
 		private readonly Main $plugin
 	){
 		Settings::load($this->plugin->getConfig());
 		EnchantTasks::init($this->plugin);
-		$this->loadRarities();
+		$rarities = $this->plugin->getConfig()->get('rarities', []);
+		Rarity::init(is_array($rarities) ? $rarities : []);
 		$this->data = $this->loadData();
 		$this->loadIdAssignments();
 
@@ -138,6 +124,10 @@ final class EnchantManager{
 
 			if(($config['has_chance'] ?? false) === true){
 				$enchant->setBaseChance((float) ($config['chance'] ?? $config['base_chance'] ?? 0.1));
+			}
+			$enchant->setMaxChance((float) ($config['max_chance'] ?? Settings::maxLevelChance()));
+			if(Rarity::get((string) ($config['rarity'] ?? 'COMMON')) === null){
+				$this->plugin->getLogger()->warning("[$source] Enchant '$key' uses unknown rarity '{$config['rarity']}'; using " . Rarity::fromName('')->label() . '.');
 			}
 
 			$id = $this->resolveId($key, $definition->id);
@@ -391,41 +381,6 @@ final class EnchantManager{
 			'has_chance' => false,
 			'chance' => 0.1
 		];
-	}
-
-	private function loadRarities() : void{
-		$config = $this->plugin->getConfig()->get('rarities', []);
-		$config = is_array($config) ? $config : [];
-
-		self::$raritySettings = [];
-		foreach(Rarity::cases() as $rarity){
-			$section = $config[$rarity->name] ?? [];
-			$section = is_array($section) ? $section : [];
-			$defaults = self::RARITY_DEFAULTS[$rarity->name];
-
-			self::$raritySettings[$rarity->name] = [
-				'name' => (string) ($section['display_name'] ?? $defaults['name']),
-				'color' => (string) ($section['display_color'] ?? $defaults['color']),
-				'weight' => (int) ($section['weight'] ?? $defaults['weight']),
-				'enabled' => (bool) ($section['enabled'] ?? true),
-			];
-		}
-	}
-
-	public static function rarityName(Rarity $rarity) : string{
-		return self::$raritySettings[$rarity->name]['name'] ?? self::RARITY_DEFAULTS[$rarity->name]['name'];
-	}
-
-	public static function rarityColor(Rarity $rarity) : string{
-		return self::$raritySettings[$rarity->name]['color'] ?? self::RARITY_DEFAULTS[$rarity->name]['color'];
-	}
-
-	public static function rarityWeight(Rarity $rarity) : int{
-		return self::$raritySettings[$rarity->name]['weight'] ?? self::RARITY_DEFAULTS[$rarity->name]['weight'];
-	}
-
-	public static function isRarityEnabled(Rarity $rarity) : bool{
-		return self::$raritySettings[$rarity->name]['enabled'] ?? true;
 	}
 
 	private function resolveId(string $key, int $defaultId) : int{

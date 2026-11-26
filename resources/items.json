@@ -23,7 +23,8 @@
 	"enchantment_book": {
 		"enabled": true,
 		"display_name": "{rarity_color}{enchant_name} {level}",
-		"lore": ["{gray}Combine with an item to apply this enchantment", "{gray}Combine two matching books to increase its level", "", "{dark_gray}Combine with an item to use", "", "{rarity_color}Rarity: {rarity_name}"],
+		"lore": ["{gray}Combine with an item to apply this enchantment", "{gray}Combine two matching books to increase its level", "{dark_gray}Combine with an item to use", "", "{rarity_color}Rarity: {rarity_name}"],
+		"applies_lore": ["{gray}Applies to: {white}{items}"],
 		"chance_lore": ["", "{green}Success rate: {success}%", "{red}Destroy rate: {destroy}%"]
 	},
 	"magic_dust": {
@@ -51,6 +52,6 @@
 		"enabled": true,
 		"item": "slimeball",
 		"display_name": "{gray}Bi-Product",
-		"lore": ["{gray}Does absolutely nothing.", "", "{dark_gray}Combine with an enchantment book"]
+		"lore": ["{gray}Does absolutely nothing."]
 	}
 }

@@ -6,7 +6,7 @@ config_version: 2.0.0
 # ========================
 #        RARITIES
 # ========================
-# Add display_name to a tier to rename it (e.g. COMMON -> Simple for the Cosmic addon).
+# Add display_name to a tier to rename it. Rarities added by addons can be overridden here by name too.
 rarities:
   COMMON:
     weight: 50 #Chance of getting from a ce book
@@ -33,11 +33,6 @@ rarities:
     display_color: "{gold}"
     enabled: true
 
-  SOUL:
-    weight: 0
-    display_color: "{red}"
-    enabled: true
-
   MASTERY:
     weight: 3
     display_color: "{red}"
@@ -48,26 +43,82 @@ rarities:
     display_color: "{dark_red}"
     enabled: true
 # ========================
+#         CHANCES
+# ========================
+# Proc chance (%) at an enchant's max level. Level 1 uses the enchant's own `chance`; levels in between scale evenly.
+# Override per enchant with `max_chance` in enchantments.json.
+max_level_chance: 70
+
+# ========================
+#        ENCHANTER
+# ========================
+# /ce opens the shop. Prices are "level:<levels>" or "exp:<points>"; set one to false to stop selling it.
+# Rarities not listed here (including ones addons add, like SOUL or FABLED) use "default".
+shop:
+  title: "{dark_purple}Enchanter"
+  books:
+    COMMON: "level:5"
+    UNCOMMON: "level:10"
+    RARE: "level:15"
+    EPIC: "level:25"
+    LEGENDARY: "level:35"
+    MASTERY: false
+    HEROIC: false
+    default: "level:50"
+  items:
+    white_scroll: "level:30"
+    holy_scroll: "level:60"
+    black_scroll: "level:20"
+
+# ========================
+#        TINKERER
+# ========================
+# Magic Dust per enchantment book, by rarity. Unlisted rarities use default_dust; 0 refuses the book.
+tinkerer:
+  title: "{gold}Tinkerer"
+  default_dust: 1
+  dust:
+    COMMON: 1
+    UNCOMMON: 1
+    RARE: 2
+    EPIC: 2
+    LEGENDARY: 3
+    MASTERY: 4
+    HEROIC: 5
+
+# ========================
 #         ADDONS
 # ========================
 # Addons run as code on your server: only list repositories you trust.
 addons:
   repositories: {}  # name: "owner/repo"
-  allow_any_repository: false
+  allow_any_repository: true
 
 # ========================
 #     ENCHANTMENT BOOKS
 # ========================
-# When true, every enchantment book has a SUCCESS rate. If applying it fails, there is a
-# destroy_chance % chance the item is destroyed (50 = a 50/50 coin flip). Otherwise, the item is
-# simply kept. An item with a White/Holy Scroll is never destroyed: the scroll is used up instead.
+# When true, every enchantment book has a SUCCESS rate and a DESTROY rate that add up to 100
+# (a 70% book has a 30% destroy rate). If applying fails, the destroy rate is the chance the item is
+# destroyed; otherwise it is kept. An item with a White/Holy Scroll is never destroyed: the scroll is used up.
+# Magic Dust raises success, which lowers destroy by the same amount.
 # Turning this off also turns off Magic Dust (it only works on books that have these rates).
 book_chance: true
 
 enchant_books:
   success_min: 30      # a new book rolls its success rate between these two numbers
   success_max: 100
-  destroy_chance: 50   # % chance a FAILED book destroys the item
+  # Level a rarity book gives when opened: random (1 to the enchant's max level), a number, or a range
+  # like "2-4" (capped at the enchant's max). Rarities not listed use "default".
+  levels:
+    COMMON: random
+    UNCOMMON: random
+    RARE: random
+    EPIC: random
+    LEGENDARY: random
+    default: 1
+
+  item_type_names:
+    block_tools: "Tools"
 
 # ========================
 #       BLACK SCROLL
@@ -78,6 +129,9 @@ black_scroll:
 # ========================
 #         MESSAGES
 # ========================
+# Every message goes through PlaceholderAPI: colors ({red}, {bold}...), {player}, {player_health}, {server_online},
+# {enchant_name:<key>}, {roman:<number>}, and placeholders addons. Set a message to "" to turn it off.
+# Addon messages can be overridden here too, or in that addon's own config.yml.
 messages:
   invalid_enchantment: "{red}That enchantment is unavailable."
   item_null: "{red}Hold an item first."
@@ -86,6 +140,19 @@ messages:
   enchant_conflict: "{red}{enchant_name} can't be combined with {other_name}."
   enchant_requires: "{red}{enchant_name} requires {other_name} {required_level} on the item first."
   enchant_forced: "{yellow}Forced {enchant_name} past a conflict/requirement check."
+  shop_bought: "{green}Bought {item}{green} for {price}."
+  shop_cannot_afford: "{red}You need {price} to buy that."
+  shop_inventory_full: "{red}Make room in your inventory first."
+  tinkerer_traded: "{green}Traded {books} book(s) for {dust} Magic Dust."
+  tinkerer_nothing: "{red}Put enchantment books in first."
+  tinkerer_disabled: "{red}Magic Dust is disabled on this server."
+  shop_price_lore: "{gray}Price: {yellow}{price}"
+  shop_buy_lore: "{green}Click to buy"
+  tinkerer_button_name: "{gold}Tinkerer"
+  tinkerer_button_lore: "{gray}Trade enchantment books for Magic Dust"
+  tinkerer_back_name: "{yellow}Back to the Enchanter"
+  tinkerer_confirm_name: "{green}Trade for Magic Dust"
+  tinkerer_confirm_lore: "{gray}{books} book(s) -> {light_purple}{dust} Magic Dust"
   enchant_applied: "{green}Applied {enchant_name:{key}} {level} to your item."
   enchant_removed: "{green}Removed {enchant_name:{key}} from your item."
   tool_repaired: "{green}Your tool has been repaired!"
@@ -117,9 +184,36 @@ messages:
   dust_success_boosted: "{green}The book's success rate is now {success}%."
   dust_destroy_reduced: "{green}The book's destroy rate is now {destroy}%."
   dust_nothing: "{gray}The Bio Product fizzled out. Nothing happened."
+  addon_usage: "{red}Usage: /ce addon <list | install <name> | remove <name>>"
+  addon_unknown: "{red}Unknown addon '{name}'. Add it to addons.repositories in config.yml (or set addons.allow_any_repository and use owner/repo)."
+  addon_already_downloading: "{yellow}{name} is already downloading."
+  addon_downloading: "{gray}Downloading {name} from github.com/{repository} ..."
+  addon_download_failed: "{red}Could not install {name}: {error}"
+  addon_downloaded_verified: "{green}Downloaded {name} {tag}"
+  addon_downloaded_unverified: "{green}Downloaded {name} {tag}"
+  addon_restart_to_update: "{yellow}Restart the server to switch to the new version."
+  addon_saved_restart: "{yellow}Saved; restart the server to load it."
+  addon_installing_dependencies: "{gray}{name} needs {dependencies}; installing first."
+  addon_dependency_disabled: "{red}{name} was not loaded: {dependency} is installed but not enabled. It will load on the next restart once {dependency} is running."
+  addon_dependency_failed: "{red}{name} was not loaded: {dependency} could not be installed. It will load on the next restart once {dependency} is there."
+  addon_dependency_unlisted: "{red}{name} was not loaded: {dependency} is not in addons.repositories; install it yourself. It will load on the next restart once {dependency} is there."
+  addon_load_error: "{red}Installed {name}, but loading failed: {error}. Restart to retry."
+  addon_load_refused: "{red}Installed {name}, but PocketMine refused to load it (check the console). Restart to retry."
+  addon_enabled: "{green}Enabled {plugin}."
+  addon_enable_failed: "{red}{plugin} failed to enable (check the console)."
+  addon_not_installed: "{red}Addon '{name}' is not installed."
+  addon_removed: "{green}Removed {name}."
+  addon_removed_restart: "{green}Removed {name}. Restart to unload its enchants completely."
+  addon_remove_locked: "{yellow}Disabled {name}, but the file is in use; it will be gone after you delete {file} while the server is off."
+  addon_list_empty: "{gray}No addons installed. Use /ce addon install <name>."
+  addon_list_entry: "{white}{name} {gray}{repository} {tag} - {state}"
+  addon_list_entry_manual: "{white}{name} {gray}(installed by hand) - {state}"
+  addon_state_enabled: "{green}enabled"
+  addon_state_not_loaded: "{red}not loaded"
+  addon_list_available: "{gray}Available: {names}"
   proc_messages:
     enabled: true
-    format: "§e{enchant_name:{key}} §fhas activated! (Level: {level})"
+    format: "{yellow}{enchant_name:{key}} {reset}has activated! (Level: {level})"
 # =======================
 #      SETTINGS
 # =======================
