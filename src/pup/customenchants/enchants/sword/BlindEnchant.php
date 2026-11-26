@@ -9,41 +9,14 @@ use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use pocketmine\player\Player;
+use pup\customenchants\types\ChanceWeaponEnchant;
 use pup\customenchants\types\WeaponEnchant;
 use Random\RandomException;
 
-class BlindEnchant extends WeaponEnchant
+class BlindEnchant extends ChanceWeaponEnchant
 {
-
-    /**
-     * @inheritDoc
-     */
-    public function isApplicableTo(Entity $victim)
-    : bool
+    protected function trigger(Player $attacker, Living $victim, int $level): void
     {
-        return $victim instanceof Living;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getDamageBonus(int $enchantmentLevel)
-    : float
-    {
-        return 0;
-    }
-
-    /**
-     * @throws RandomException
-     */
-    public function onPostAttack(Entity $attacker, Entity $victim, int $enchantmentLevel)
-    : void
-    {
-        if ($victim instanceof Player && $attacker instanceof Player) {
-            $chance = $this->getChance($enchantmentLevel, $this->getMaxLevel());
-            if (random_int(1, 100) <= $chance) {
-                $victim->getEffects()->add(new EffectInstance(VanillaEffects::BLINDNESS(), $enchantmentLevel * 75, min($enchantmentLevel - 1, 1)));
-            }
-        }
+        $victim->getEffects()->add(new EffectInstance(VanillaEffects::BLINDNESS(), 20 * (3 + $level), 0));
     }
 }

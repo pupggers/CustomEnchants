@@ -1,230 +1,615 @@
 <?php
 
+declare(strict_types=1);
+
 namespace pup\customenchants;
 
-use pocketmine\data\bedrock\EnchantmentIdMap;
-use pocketmine\item\Armor;
-use pocketmine\item\Axe;
-use pocketmine\item\Bow;
-use pocketmine\item\enchantment\Enchantment;
-use pocketmine\item\enchantment\ItemFlags;
-use pocketmine\inventory\ArmorInventory;
-use pocketmine\item\Hoe;
-use pocketmine\item\Item;
-use pocketmine\item\Pickaxe;
-use pocketmine\item\Shovel;
-use pocketmine\item\Sword;
-use pocketmine\item\Tool;
-use pocketmine\lang\Translatable;
-use pup\customenchants\enchants\armor\OverloadEnchant;
-use pup\customenchants\enchants\armor\ShuffleEnchant;
-use pup\customenchants\enchants\armor\boots\BunnyEnchant;
-use pup\customenchants\enchants\armor\boots\GearsEnchant;
-use pup\customenchants\enchants\armor\boots\TakeOffEnchant;
-use pup\customenchants\enchants\armor\helmet\AquaticEnchant;
-use pup\customenchants\enchants\armor\helmet\GlowingEnchant;
-use pup\customenchants\enchants\bow\TeleportEnchant;
-use pup\customenchants\enchants\sword\AronistEnchant;
-use pup\customenchants\enchants\sword\BlindEnchant;
-use pup\customenchants\enchants\sword\DazeEnchant;
-use pup\customenchants\enchants\sword\ZuesEnchant;
-use pup\customenchants\enchants\tools\ExperienceEnchant;
-use pup\customenchants\enchants\tools\RestoreEnchant;
-use pup\customenchants\enchants\tools\hoe\SpeedEnchant;
-use pup\customenchants\enchants\tools\pickaxe\AutoSmeltEnchant;
-use pup\customenchants\enchants\tools\pickaxe\DrillEnchant;
-use pup\customenchants\enchants\tools\pickaxe\FeedEnchant;
-use pup\customenchants\enchants\tools\pickaxe\HasteEnchant;
-use pup\customenchants\items\ItemRegistry;
-use pup\customenchants\utils\Rarity;
+use InvalidArgumentException;
+use JsonException;
 use RuntimeException;
+use Throwable;
+use pocketmine\data\bedrock\EnchantmentIdMap;
+use pocketmine\item\Item;
+use pocketmine\item\enchantment\{
+	Enchantment,
+	EnchantmentInstance,
+	ItemEnchantmentTagRegistry,
+};
+use pocketmine\lang\Translatable;
+use pocketmine\player\Player;
+use pocketmine\plugin\Plugin;
+use pup\customenchants\api\{
+	ApplyResult,
+	ApplyStatus,
+	EnchantDefinition,
+};
+use pup\customenchants\items\ItemRegistry;
+use pup\customenchants\utils\{
+	EnchantPlaceholders,
+	EnchantTasks,
+	Rarity,
+	Settings,
+};
 
-final class EnchantManager
-{
-    private const array DEFINITIONS = [
-        'feed' => ['id' => 1000, 'class' => FeedEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
-        'haste' => ['id' => 1001, 'class' => HasteEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
-        'drill' => ['id' => 1002, 'class' => DrillEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
-        'speed' => ['id' => 1003, 'class' => SpeedEnchant::class, 'flags' => [ItemFlags::HOE, ItemFlags::PICKAXE]],
-        'zues' => ['id' => 1004, 'class' => ZuesEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
-        'daze' => ['id' => 1005, 'class' => DazeEnchant::class, 'flags' => [ItemFlags::SWORD]],
-        'blind' => ['id' => 1006, 'class' => BlindEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
-        'aronist' => ['id' => 1007, 'class' => AronistEnchant::class, 'flags' => [ItemFlags::SWORD, ItemFlags::AXE]],
-        'teleport' => ['id' => 1008, 'class' => TeleportEnchant::class, 'flags' => [ItemFlags::BOW]],
-        'overload' => ['id' => 1009, 'class' => OverloadEnchant::class, 'flags' => [ItemFlags::ARMOR]],
-        'glowing' => ['id' => 1010, 'class' => GlowingEnchant::class, 'flags' => [ItemFlags::HEAD]],
-        'gears' => ['id' => 1011, 'class' => GearsEnchant::class, 'flags' => [ItemFlags::FEET]],
-        'bunny' => ['id' => 1012, 'class' => BunnyEnchant::class, 'flags' => [ItemFlags::FEET]],
-        'restore' => ['id' => 1013, 'class' => RestoreEnchant::class, 'flags' => [ItemFlags::DIG]],
-        'shuffle' => ['id' => 1014, 'class' => ShuffleEnchant::class, 'flags' => [ItemFlags::ARMOR]],
-        'takeoff' => ['id' => 1015, 'class' => TakeOffEnchant::class, 'flags' => [ItemFlags::FEET]],
-        'aquatic' => ['id' => 1016, 'class' => AquaticEnchant::class, 'flags' => [ItemFlags::HEAD]],
-        'autosmelt' => ['id' => 1017, 'class' => AutoSmeltEnchant::class, 'flags' => [ItemFlags::PICKAXE]],
-        'experience' => ['id' => 1018, 'class' => ExperienceEnchant::class, 'flags' => [ItemFlags::DIG]],
-    ];
+final class EnchantManager{
+	public const int MIN_SAFE_LOW_BYTE = 64;
+	public const int MAX_ID = 32767;
 
-    private array $data;
-    /** @var array<string, Enchantment> */
-    private array $registered = [];
+	/** @var array<string, array<string, mixed>> */
+	private array $data;
 
-    public function __construct(private readonly Main $plugin)
-    {
-        $this->data = $this->loadData();
-        $this->registerEnchants();
-        ItemRegistry::init();
-        EnchantPlaceholders::register($this);
-    }
+	/** @var array<string, EnchantDefinition> */
+	private array $definitions = [];
 
-    /** @return array<string, array<string, mixed>> */
-    private function loadData(): array
-    {
-        $path = $this->plugin->getDataFolder() . 'enchantments.json';
-        $decoded = json_decode((string) file_get_contents($path), true);
-        if (!is_array($decoded)) {
-            throw new RuntimeException('Could not read enchantments.json: it must contain a JSON object.');
-        }
-        $changed = false;
-        if (isset($decoded['aronsit']) && !isset($decoded['aronist'])) {
-            $decoded['aronist'] = $decoded['aronsit'];
-            unset($decoded['aronsit']);
-            $changed = true;
-        }
-        foreach (self::DEFINITIONS as $key => $_definition) {
-            if (!isset($decoded[$key])) {
-                $decoded[$key] = $this->defaultData($key);
-                $changed = true;
-            }
-        }
-        if ($changed) {
-            file_put_contents($path, json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
-        }
-        return $decoded;
-    }
+	/** @var array<string, array<string, mixed>> */
+	private array $configs = [];
 
-    /** @return array<string, mixed> */
-    private function defaultData(string $key): array
-    {
-        return ['enabled' => true, 'display_name' => ucwords(str_replace('_', ' ', $key)), 'description' => 'Configure this enchantment before enabling it.', 'rarity' => 'COMMON', 'max_level' => 1, 'has_chance' => false, 'chance' => 0.1];
-    }
+	/** @var array<string, Plugin> */
+	private array $owners = [];
 
-    private function registerEnchants(): void
-    {
-        foreach (self::DEFINITIONS as $key => $definition) {
-            $data = $this->data[$key];
-            if (($data['enabled'] ?? true) !== true) {
-                continue;
-            }
-            try {
-                $class = $definition['class'];
-                $enchant = new $class((string) ($data['display_name'] ?? $key), Rarity::fromName((string) ($data['rarity'] ?? 'COMMON')), (string) ($data['description'] ?? ''), max(1, (int) ($data['max_level'] ?? 1)), ...$definition['flags']);
-                if (($data['has_chance'] ?? false) === true) {
-                    $enchant->setBaseChance((float) ($data['chance'] ?? $data['base_chance'] ?? 0.1));
-                }
-                EnchantmentIdMap::getInstance()->register($definition['id'], $enchant);
-                $this->registered[$key] = $enchant;
-                $this->plugin->getLogger()->info("Registered {$enchant->getName()} ($key)");
-            } catch (RuntimeException $exception) {
-                $this->plugin->getLogger()->error("Could not register $key: {$exception->getMessage()}");
-            }
-        }
-    }
+	/** @var array<string, Enchantment&CustomEnchantInterface> */
+	private array $registered = [];
 
-    public static function normalizeKey(string $key): string
-    {
-        return strtolower(str_replace([' ', '-'], '', $key));
-    }
+	/** @var array<int, string> */
+	private array $keysByObject = [];
 
-    public function getByKey(string $key): ?Enchantment
-    {
-        return $this->registered[self::normalizeKey($key)] ?? null;
-    }
+	/** @var array<string, array<string, string>>|null */
+	private ?array $conflictGraph = null;
 
-    public function getIdByKey(string $key): ?int
-    {
-        return self::DEFINITIONS[self::normalizeKey($key)]['id'] ?? null;
-    }
+	private int $nextId = 1021;
 
-    /** @return array<string, Enchantment> */
-    public function getEnabled(): array
-    {
-        return $this->registered;
-    }
+	/** @var array<string, int> */
+	private array $idAssignments = [];
 
-    public function canApply(string $key, Item $item): bool
-    {
-        $definition = self::DEFINITIONS[self::normalizeKey($key)] ?? null;
-        if ($definition === null || $this->getByKey($key) === null) {
-            return false;
-        }
-        $itemFlags = self::getItemFlags($item);
-        foreach ($definition['flags'] as $flag) {
-            if (($itemFlags & $flag) !== 0) {
-                return true;
-            }
-        }
-        return false;
-    }
+	/** @var array<string, int> */
+	private array $resolvedIds = [];
 
-    private static function getItemFlags(Item $item): int
-    {
-        return match (true) {
-            $item instanceof Sword => ItemFlags::SWORD,
-            $item instanceof Bow => ItemFlags::BOW,
-            $item instanceof Pickaxe => ItemFlags::PICKAXE,
-            $item instanceof Axe => ItemFlags::AXE,
-            $item instanceof Shovel => ItemFlags::SHOVEL,
-            $item instanceof Hoe => ItemFlags::HOE,
-            $item instanceof Tool => ItemFlags::DIG,
-            $item instanceof Armor => match ($item->getArmorSlot()) {
-                ArmorInventory::SLOT_HEAD => ItemFlags::HEAD,
-                ArmorInventory::SLOT_CHEST => ItemFlags::TORSO,
-                ArmorInventory::SLOT_LEGS => ItemFlags::LEGS,
-                ArmorInventory::SLOT_FEET => ItemFlags::FEET,
-                default => ItemFlags::ARMOR,
-            },
-            default => ItemFlags::NONE,
-        };
-    }
+	private bool $idsDirty = false;
 
-    public function rebuildLore(Item $item): Item
-    {
-        if ($item->getNamedTag()->getTag('hideEnchantments') !== null) {
-            return $item;
-        }
-        $oldGenerated = json_decode($item->getNamedTag()->getString('custom_enchants_lore', '[]'), true);
-        $oldGenerated = is_array($oldGenerated) ? $oldGenerated : [];
-        $lore = array_values(array_filter($item->getLore(), fn(string $line): bool => !in_array($line, $oldGenerated, true)));
-        $generated = [];
-        foreach ($item->getEnchantments() as $instance) {
-            $enchant = $instance->getType();
-            if (!$enchant instanceof CustomEnchant && !$enchant instanceof \pup\customenchants\types\WeaponEnchant) {
-                continue;
-            }
-            $name = $enchant->getName();
-            $name = $name instanceof Translatable ? $name->getText() : $name;
-            $level = $instance->getLevel();
-            $generated[] = $this->plugin->getMessages()->format((string) $this->plugin->getConfig()->getNested('enchant_lore.entry_format', '&r&8» &r{color}{name} {level}'), null, ['color' => Rarity::getColor($enchant->getRarity()), 'name' => $name, 'level' => $this->plugin->getConfig()->getNested('enchant_lore.roman_numerals', true) ? self::intToRoman($level) : $level]);
-        }
-        if ($generated !== []) {
-            sort($generated, SORT_NATURAL | SORT_FLAG_CASE);
-            array_unshift($generated, $this->plugin->getMessages()->format((string) $this->plugin->getConfig()->getNested('enchant_lore.header', '&r&dEnchantments:')));
-            $lore = [...$lore, ...$generated];
-        }
-        $item->getNamedTag()->setString('custom_enchants_lore', json_encode($generated, JSON_UNESCAPED_UNICODE));
-        $item->setLore($lore);
-        return $item;
-    }
+	public function __construct(
+		private readonly Main $plugin
+	){
+		Settings::load($this->plugin->getConfig());
+		EnchantTasks::init($this->plugin);
+		$rarities = $this->plugin->getConfig()->get('rarities', []);
+		Rarity::init(is_array($rarities) ? $rarities : []);
+		$this->data = $this->loadData();
+		$this->loadIdAssignments();
 
-    public static function intToRoman(int $number): string
-    {
-        $map = ['M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400, 'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40, 'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1];
-        $result = '';
-        foreach ($map as $roman => $value) {
-            while ($number >= $value) {
-                $result .= $roman;
-                $number -= $value;
-            }
-        }
-        return $result;
-    }
+		foreach(DefaultEnchants::all() as $definition){
+			$this->register($definition, null, $this->data[$definition->key] ?? []);
+		}
+
+		ItemRegistry::init();
+		EnchantPlaceholders::register($this);
+	}
+
+	/**
+	 * @param array<string, mixed> $config
+	 * @return (Enchantment&CustomEnchantInterface)|null
+	 * @throws InvalidArgumentException
+	 */
+	public function register(EnchantDefinition $definition, ?Plugin $owner = null, array $config = []) : ?Enchantment{
+		$key = $definition->key;
+		if(isset($this->definitions[$key])){
+			$by = isset($this->owners[$key]) ? $this->owners[$key]->getName() : $this->plugin->getName();
+			throw new InvalidArgumentException("Enchant '$key' is already registered by $by.");
+		}
+
+		$config = array_replace($this->defaultData($key), $definition->defaults, $config);
+		$definition = $definition->withConfig($config);
+
+		$this->definitions[$key] = $definition;
+		$this->configs[$key] = $config;
+		if($owner !== null){
+			$this->owners[$key] = $owner;
+		}
+		$this->conflictGraph = null;
+
+		if(($config['enabled'] ?? true) !== true){
+			return null;
+		}
+
+		$source = $owner?->getName() ?? $this->plugin->getName();
+		try{
+			$enchant = ($definition->factory)(
+				(string) ($config['display_name'] ?? $key),
+				Rarity::fromName((string) ($config['rarity'] ?? 'COMMON'))->value,
+				(string) ($config['description'] ?? ''),
+				max(1, (int) ($config['max_level'] ?? 1)),
+			);
+			if(!$enchant instanceof Enchantment || !$enchant instanceof CustomEnchantInterface){
+				throw new RuntimeException('factory must return an Enchantment implementing CustomEnchantInterface');
+			}
+
+			if(($config['has_chance'] ?? false) === true){
+				$enchant->setBaseChance((float) ($config['chance'] ?? $config['base_chance'] ?? 0.1));
+			}
+			$enchant->setMaxChance((float) ($config['max_chance'] ?? Settings::maxLevelChance()));
+			if(Rarity::get((string) ($config['rarity'] ?? 'COMMON')) === null){
+				$this->plugin->getLogger()->warning("[$source] Enchant '$key' uses unknown rarity '{$config['rarity']}'; using " . Rarity::fromName('')->label() . '.');
+			}
+
+			$id = $this->resolveId($key, $definition->id);
+			EnchantmentIdMap::getInstance()->register($id, $enchant);
+		}catch(Throwable $exception){
+			$this->plugin->getLogger()->error("[$source] Could not register enchant '$key': {$exception->getMessage()}");
+			return null;
+		}finally{
+			$this->saveIdAssignments();
+		}
+
+		$this->resolvedIds[$key] = $id;
+		$this->registered[$key] = $enchant;
+		$this->keysByObject[spl_object_id($enchant)] = $key;
+
+		return $enchant;
+	}
+
+	public function check(Item $item, string $key, int $level) : ApplyResult{
+		$key = self::normalizeKey($key);
+		$enchant = $this->registered[$key] ?? null;
+		if($enchant === null){
+			return ApplyResult::fail(ApplyStatus::UNKNOWN);
+		}
+		if(!$this->canApply($key, $item)){
+			return ApplyResult::fail(ApplyStatus::INCOMPATIBLE_ITEM);
+		}
+		if($level > $enchant->getMaxLevel()){
+			return ApplyResult::fail(ApplyStatus::LEVEL_TOO_HIGH, null, $enchant->getMaxLevel());
+		}
+
+		$definition = $this->definitions[$key];
+		$present = $this->getKeysOnItem($item);
+		$upgrading = isset($present[$key]);
+		unset($present[$key]);
+
+		$conflicts = $this->conflictGraph()[$key] ?? [];
+		foreach($present as $other => $_level){
+			if(isset($conflicts[$other])){
+				return ApplyResult::fail(ApplyStatus::CONFLICT, $other);
+			}
+			if(in_array($key, $this->definitions[$other]->replaces ?? [], true)){
+				return ApplyResult::fail(ApplyStatus::CONFLICT, $other);
+			}
+		}
+
+		if(!$upgrading){
+			foreach($definition->requires as $required => $minLevel){
+				if(($present[$required] ?? 0) < $minLevel){
+					return ApplyResult::fail(ApplyStatus::MISSING_REQUIREMENT, $required, $minLevel);
+				}
+			}
+		}
+
+		return ApplyResult::ok();
+	}
+
+	public function apply(Item $item, string $key, int $level, bool $force = false) : ApplyResult{
+		$key = self::normalizeKey($key);
+		$result = $this->check($item, $key, $level);
+
+		if(!$result->isOk() && !($force && $result->status->isBypassable())){
+			return $result;
+		}
+
+		foreach($this->definitions[$key]->replaces as $replaced){
+			$old = $this->registered[$replaced] ?? null;
+			if($old !== null && $item->hasEnchantment($old)){
+				$item->removeEnchantment($old);
+			}
+		}
+
+		$item->addEnchantment(new EnchantmentInstance($this->registered[$key], $level));
+		$this->rebuildLore($item);
+
+		return $result;
+	}
+
+	public function sendResult(Player $player, ApplyResult $result, string $key, int $level) : void{
+		$key = self::normalizeKey($key);
+		MessageService::send($player, $result->status->messageKey(), [
+			'enchant_name' => $this->displayName($key),
+			'level' => $level,
+			'max_level' => $result->level,
+			'other_name' => $result->other !== null ? $this->displayName($result->other) : '',
+			'required_level' => $result->level,
+		]);
+	}
+
+	/** @return array<string, int> */
+	public function getKeysOnItem(Item $item) : array{
+		$out = [];
+		foreach($item->getEnchantments() as $instance){
+			$key = $this->keyOf($instance->getType());
+			if($key !== null){
+				$out[$key] = $instance->getLevel();
+			}
+		}
+		return $out;
+	}
+
+	/** @return list<array{0: string, 1: string}> */
+	public function findConflictsOnItem(Item $item) : array{
+		$keys = array_keys($this->getKeysOnItem($item));
+		$graph = $this->conflictGraph();
+		$pairs = [];
+		foreach($keys as $i => $a){
+			foreach(array_slice($keys, $i + 1) as $b){
+				if(isset($graph[$a][$b])){
+					$pairs[] = [$a, $b];
+				}
+			}
+		}
+		return $pairs;
+	}
+
+	/** @return array<string, array<string, string>> */
+	private function conflictGraph() : array{
+		if($this->conflictGraph !== null){
+			return $this->conflictGraph;
+		}
+
+		$graph = [];
+		foreach($this->definitions as $key => $definition){
+			foreach($definition->conflicts as $other){
+				if($other === $key){
+					continue;
+				}
+				$graph[$key][$other] = $other;
+				$graph[$other][$key] = $key;
+			}
+		}
+
+		return $this->conflictGraph = $graph;
+	}
+
+	public static function normalizeKey(string $key) : string{
+		return strtolower(str_replace([' ', '-', '_'], '', $key));
+	}
+
+	public function getByKey(string $key) : ?Enchantment{
+		return $this->registered[self::normalizeKey($key)] ?? null;
+	}
+
+	public function keyOf(Enchantment $enchant) : ?string{
+		return $this->keysByObject[spl_object_id($enchant)] ?? null;
+	}
+
+	public function getDefinition(string $key) : ?EnchantDefinition{
+		return $this->definitions[self::normalizeKey($key)] ?? null;
+	}
+
+	/** @return array<string, EnchantDefinition> */
+	public function getDefinitions() : array{
+		return $this->definitions;
+	}
+
+	public function getOwner(string $key) : ?Plugin{
+		return $this->owners[self::normalizeKey($key)] ?? null;
+	}
+
+	/** @return list<string> */
+	public function getConflicts(string $key) : array{
+		return array_values($this->conflictGraph()[self::normalizeKey($key)] ?? []);
+	}
+
+	/** @return list<array{0: string, 1: string}> */
+	public function getConflictPairs() : array{
+		$pairs = [];
+		foreach($this->conflictGraph() as $a => $others){
+			foreach($others as $b){
+				if(strcmp($a, $b) < 0){
+					$pairs[] = [$a, $b];
+				}
+			}
+		}
+		sort($pairs);
+		return $pairs;
+	}
+
+	public function displayName(string $key) : string{
+		$key = self::normalizeKey($key);
+		$enchant = $this->registered[$key] ?? null;
+		if($enchant !== null){
+			$name = $enchant->getName();
+			return $name instanceof Translatable ? $name->getText() : $name;
+		}
+		return (string) ($this->configs[$key]['display_name'] ?? $key);
+	}
+
+	public function getIdByKey(string $key) : ?int{
+		$key = self::normalizeKey($key);
+
+		return $this->resolvedIds[$key] ?? $this->definitions[$key]?->id;
+	}
+
+	/** @return array<string, Enchantment&CustomEnchantInterface> */
+	public function getEnabled() : array{
+		return $this->registered;
+	}
+
+	public function canApply(string $key, Item $item) : bool{
+		$key = self::normalizeKey($key);
+		$definition = $this->definitions[$key] ?? null;
+
+		if($definition === null || !isset($this->registered[$key])){
+			return false;
+		}
+
+		return ItemEnchantmentTagRegistry::getInstance()->isTagArrayIntersection(
+			$definition->tags,
+			$item->getEnchantmentTags()
+		);
+	}
+
+	/** @return array<string, array<string, mixed>> */
+	private function loadData() : array{
+		$path = $this->plugin->getDataFolder() . 'enchantments.json';
+
+		$contents = file_get_contents($path);
+		if($contents === false){
+			throw new RuntimeException('Could not read enchantments.json.');
+		}
+
+		$decoded = json_decode($contents, true);
+
+		if(!is_array($decoded)){
+			throw new RuntimeException(
+				'Could not read enchantments.json: it must contain a JSON object.'
+			);
+		}
+
+		$data = [];
+		foreach($decoded as $key => $entry){
+			if(is_string($key) && is_array($entry)){
+				$data[self::normalizeKey($key)] = $entry;
+			}
+		}
+
+		return $data;
+	}
+
+	/** @return array<string, mixed> */
+	private function defaultData(string $key) : array{
+		return [
+			'enabled' => true,
+			'display_name' => ucwords(str_replace('_', ' ', $key)),
+			'description' => 'Configure this enchantment before enabling it.',
+			'rarity' => 'COMMON',
+			'max_level' => 1,
+			'has_chance' => false,
+			'chance' => 0.1
+		];
+	}
+
+	private function resolveId(string $key, int $defaultId) : int{
+		$id = $this->idAssignments[$key] ?? $defaultId;
+
+		if(self::isSafeId($id) && EnchantmentIdMap::getInstance()->fromId($id) === null && !$this->isIdReservedByOther($id, $key)){
+			return $id;
+		}
+
+		$taken = $id;
+		$id = $this->nextFreeId();
+		$this->idAssignments[$key] = $id;
+		$this->nextId = max($this->nextId, $id + 1);
+		$this->idsDirty = true;
+
+		$reason = self::isSafeId($taken) ? 'already in use' : 'unsafe';
+		$this->plugin->getLogger()->warning("Enchant ID $taken for '$key' is $reason; using $id instead.");
+
+		return $id;
+	}
+
+	private function isIdReservedByOther(int $id, string $key) : bool{
+		foreach($this->defaultIds() as $other => $defaultId){
+			if($other !== $key && $defaultId === $id && !isset($this->idAssignments[$other])){
+				return true;
+			}
+		}
+		foreach($this->idAssignments as $other => $assigned){
+			if($other !== $key && $assigned === $id){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** @return array<string, int> */
+	private function defaultIds() : array{
+		$ids = [];
+		foreach(DefaultEnchants::all() as $definition){
+			$ids[$definition->key] = $definition->id;
+		}
+		foreach($this->definitions as $key => $definition){
+			$ids[$key] = $definition->id;
+		}
+		return $ids;
+	}
+
+	public static function isSafeId(int $id) : bool{
+		return $id >= 1 && $id <= self::MAX_ID && ($id & 0xFF) >= self::MIN_SAFE_LOW_BYTE;
+	}
+
+	private function nextFreeId() : int{
+		$reserved = [
+			...array_values($this->defaultIds()),
+			...array_values($this->idAssignments),
+		];
+		$id = max(1021, $this->nextId);
+
+		while(
+			in_array($id, $reserved, true)
+			|| EnchantmentIdMap::getInstance()->fromId($id) !== null
+			|| !self::isSafeId($id)
+		){
+			if(++$id > self::MAX_ID){
+				throw new RuntimeException('No enchantment IDs are available.');
+			}
+		}
+
+		return $id;
+	}
+
+	private function loadIdAssignments() : void{
+		$path = $this->plugin->getDataFolder() . 'enchant_ids.json';
+		if(!is_file($path)){
+			return;
+		}
+
+		try{
+			$saved = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+		}catch(JsonException $exception){
+			@copy($path, $path . '.bak');
+			$this->plugin->getLogger()->warning("enchant_ids.json is unreadable ({$exception->getMessage()}); starting fresh (backup: enchant_ids.json.bak).");
+			$this->idsDirty = true;
+			return;
+		}
+
+		if(!is_array($saved)){
+			$this->idsDirty = true;
+			return;
+		}
+
+		$defaultIds = array_map(static fn(EnchantDefinition $d) : int => $d->id, DefaultEnchants::all());
+
+		foreach($saved as $key => $id){
+			$problem = match(true){
+				!is_string($key) || $key === '' => 'has an invalid key',
+				!is_int($id) || !self::isSafeId($id) => 'is not a safe ID',
+				in_array($id, $defaultIds, true) || in_array($id, $this->idAssignments, true) => 'collides with another enchant',
+				EnchantmentIdMap::getInstance()->fromId($id) !== null => 'is now used by another enchant',
+				default => null
+			};
+
+			if($problem !== null){
+				$this->plugin->getLogger()->warning("Saved enchant ID for '$key' $problem; assigning a new one.");
+				$this->idsDirty = true;
+				continue;
+			}
+
+			$this->idAssignments[$key] = $id;
+		}
+
+		if($this->idAssignments !== []){
+			$this->nextId = max($this->nextId, max($this->idAssignments) + 1);
+		}
+	}
+
+	private function saveIdAssignments() : void{
+		if(!$this->idsDirty){
+			return;
+		}
+
+		$directory = $this->plugin->getDataFolder();
+		$path = $directory . 'enchant_ids.json';
+		$temporary = $path . '.tmp';
+
+		try{
+			$json = json_encode($this->idAssignments, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+		}catch(JsonException $exception){
+			$this->plugin->getLogger()->error("Could not encode enchant IDs: {$exception->getMessage()}");
+			return;
+		}
+
+		if(file_put_contents($temporary, $json, LOCK_EX) === false || !rename($temporary, $path)){
+			$this->plugin->getLogger()->error('Could not save enchant_ids.json; reassigned IDs may change next restart.');
+			return;
+		}
+
+		$this->idsDirty = false;
+	}
+
+	public function rebuildLore(Item $item) : Item{
+		if($item->getNamedTag()->getTag('hideEnchantments') !== null){
+			return $item;
+		}
+
+		$oldGenerated = json_decode(
+			$item->getNamedTag()->getString('custom_enchants_lore', '[]'),
+			true
+		);
+
+		$oldGenerated = is_array($oldGenerated) ? $oldGenerated : [];
+
+		$lore = array_values(array_filter(
+			$item->getLore(),
+			fn(string $line) : bool => !in_array($line, $oldGenerated, true)
+		));
+
+		$generated = [];
+
+		foreach($item->getEnchantments() as $instance){
+			$enchant = $instance->getType();
+
+			if(!$enchant instanceof CustomEnchantInterface){
+				continue;
+			}
+
+			$name = $enchant->getName();
+			$name = $name instanceof Translatable ? $name->getText() : $name;
+
+			$level = $instance->getLevel();
+
+			$generated[] = $this->plugin->getMessages()->format(
+				Settings::loreEntryFormat(),
+				null,
+				[
+					'color' => Rarity::fromValue($enchant->getRarity())->color(),
+					'name' => $name,
+					'level' => Settings::loreRomanNumerals() ? self::intToRoman($level) : $level
+				]
+			);
+		}
+
+		if($generated !== []){
+			sort($generated, SORT_NATURAL | SORT_FLAG_CASE);
+
+			array_unshift(
+				$generated,
+				$this->plugin->getMessages()->format(Settings::loreHeader())
+			);
+
+			$lore = [...$lore, ...$generated];
+		}
+
+		$item->getNamedTag()->setString(
+			'custom_enchants_lore',
+			json_encode($generated, JSON_UNESCAPED_UNICODE)
+		);
+
+		$item->setLore($lore);
+
+		return $item;
+	}
+
+	public static function intToRoman(int $number) : string{
+		$map = [
+			'M' => 1000,
+			'CM' => 900,
+			'D' => 500,
+			'CD' => 400,
+			'C' => 100,
+			'XC' => 90,
+			'L' => 50,
+			'XL' => 40,
+			'X' => 10,
+			'IX' => 9,
+			'V' => 5,
+			'IV' => 4,
+			'I' => 1
+		];
+
+		$result = '';
+
+		foreach($map as $roman => $value){
+			while($number >= $value){
+				$result .= $roman;
+				$number -= $value;
+			}
+		}
+
+		return $result;
+	}
 }

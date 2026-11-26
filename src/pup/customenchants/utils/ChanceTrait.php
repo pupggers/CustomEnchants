@@ -1,35 +1,53 @@
 <?php
 
+declare(strict_types=1);
+
 namespace pup\customenchants\utils;
 
 trait ChanceTrait
 {
-    /** Stored and returned as a percentage between 0 and 100. */
     private float $baseChance = 10.0;
 
-    public function setBaseChance(float $chance): void {
-        // Decimal values preserve the old config convention: 0.1 means 10%.
-        $this->baseChance = max(0, min(100, $chance <= 1 ? $chance * 100 : $chance));
-    }
+    private float $maxChance = 70.0;
 
-    public function getChance(int $currentLevel, int $maxLevel): float {
-        return $this->calculateChance($currentLevel, $maxLevel, $this->baseChance);
-    }
-
-    private function calculateChance($currentLevel, $maxLevel, $baseChance)
+    public function setBaseChance(float $chance): void
     {
+        $this->baseChance = self::toPercent($chance);
+    }
+
+    public function setMaxChance(float $chance): void
+    {
+        $this->maxChance = self::toPercent($chance);
+    }
+
+    public function getChance(int $currentLevel, int $maxLevel): float
+    {
+        $maxLevel = max(1, $maxLevel);
         $currentLevel = max(1, min($currentLevel, $maxLevel));
 
-        if ($currentLevel === $maxLevel) {
-            return 100;
+        if ($maxLevel === 1) {
+            return $this->maxChance;
         }
-        $chanceIncreasePerLevel = (100 - $baseChance) / ($maxLevel - 1);
-        $adjustedChance = $baseChance + ($currentLevel - 1) * $chanceIncreasePerLevel;
 
-        return min(100, $adjustedChance);
+        $perLevel = ($this->maxChance - $this->baseChance) / ($maxLevel - 1);
+
+        return max(0.0, min(100.0, $this->baseChance + ($currentLevel - 1) * $perLevel));
     }
 
-    public function hasChanceTrait(): bool{
+    public function roll(int $level, float $bonusPercent = 0.0): bool
+    {
+        $chance = min(100.0, $this->getChance($level, $this->getMaxLevel()) + $bonusPercent);
+
+        return (mt_rand(0, 9999) / 100.0) < $chance;
+    }
+
+    public function hasChanceTrait(): bool
+    {
         return true;
+    }
+
+    private static function toPercent(float $chance): float
+    {
+        return max(0.0, min(100.0, $chance <= 1.0 ? $chance * 100.0 : $chance));
     }
 }

@@ -14,9 +14,14 @@ class FeedEnchant extends ToolEnchant
 {
 
     /**
+	 * @param Player $player
+	 * @param Item $item
+	 * @param Block $block
+	 * @param Event|null $event
+	 * @param int $level
      * @throws RandomException
      */
-    public function execute(Player $player, Item $item, Block $block, ?Event $event)
+    public function execute(Player $player, Item $item, Block $block, ?Event $event, int $level)
     : void
     {
             if ($player->getHungerManager()->getFood() < 20) {
