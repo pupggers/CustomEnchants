@@ -1,0 +1,58 @@
+# Copy into the plugin repository. Hub replaces CustomEnchants on installation.
+name: BedrockNexus Publish
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out plugin source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP for Axolotl-PM 5
+        uses: axolotl-pm/setup-php-action@b8c3f9add4f2ad4a5e2624a1112aba899ee8db0e # 1.0.0
+        with:
+          php-version: '8.4'
+          install-path: ../bin
+          pm-version-major: '5'
+
+      - name: Check PHP syntax
+        run: find src -name '*.php' -print0 | xargs -0 -r -n1 php -l
+
+      - name: Build with DevTools
+        id: build
+        uses: AxolotlBucketLabs/DevTools@cd05e444a26b3c63720b443961b3646e22307f56 # v4.0.4
+        with:
+          project: .
+          virions: .devtools-virions
+          output: build
+          prepare-dependencies: ${{ hashFiles('composer.lock') != '' }}
+
+      - name: Stage the plugin file
+        env:
+          SOURCE_PHAR: ${{ steps.build.outputs.phar }}
+          OUTPUT_PHAR: 'dist/CustomEnchants.phar'
+        run: |
+          mkdir -p dist
+          cp -- "$SOURCE_PHAR" "$OUTPUT_PHAR"
+
+      - name: Upload plugin for build selection
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: plugin-package
+          path: 'dist/CustomEnchants.phar'
+          if-no-files-found: error
