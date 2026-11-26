@@ -1,10 +1,9 @@
 <?php
 
+declare(strict_types=1);
 
 namespace pup\customenchants\enchants\armor\helmet;
 
-
-use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
@@ -12,18 +11,13 @@ use pup\customenchants\types\ToggledArmorEnchant;
 
 class AquaticEnchant extends ToggledArmorEnchant
 {
-
-    public function onEquip(Player $player, Item $item)
-    : void
+    public function onEquip(Player $player, Item $item, int $level, int $slot): void
     {
-        $player->getEffects()->add(new EffectInstance(VanillaEffects::WATER_BREATHING(), 2147483647, 1,true, false, null, true));
+        $this->grantEffect($player, $slot, VanillaEffects::WATER_BREATHING(), max(0, $level - 1));
     }
 
-    public function onDequip(Player $player, Item $item)
-    : void
+    public function onDequip(Player $player, Item $item, int $level, int $slot): void
     {
-        if($player->getEffects()->has(VanillaEffects::WATER_BREATHING())){
-            $player->getEffects()->remove(VanillaEffects::WATER_BREATHING());
-        }
+        $this->revokeEffect($player, $slot, VanillaEffects::WATER_BREATHING());
     }
 }

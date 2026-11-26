@@ -18,11 +18,15 @@ class AutoSmeltEnchant extends ToolEnchant
 {
 
     /**
+	 * @param Player $player
+	 * @param Item $item
+	 * @param Block $block
+	 * @param Event|null $event
+	 * @param int $level
      * @throws RandomException
      */
-    public function execute(Player $player, Item $item, Block $block, ?Event $event): void {
+    public function execute(Player $player, Item $item, Block $block, ?Event $event, int $level): void {
         $furnaceManager = $player->getServer()->getCraftingManager()->getFurnaceRecipeManager(FurnaceType::FURNACE);
-        $level = $item->getEnchantment($this)->getLevel();
         $chance = $this->getChance($level, $this->getMaxLevel());
 
         if (random_int(1, 100) <= $chance) {

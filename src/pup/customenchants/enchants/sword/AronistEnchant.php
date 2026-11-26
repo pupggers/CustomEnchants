@@ -1,55 +1,19 @@
 <?php
 
-
 namespace pup\customenchants\enchants\sword;
 
-
-use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
-use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\player\Player;
-use pocketmine\world\particle\FlameParticle;
-use pup\customenchants\types\WeaponEnchant;
-use Random\RandomException;
+use pup\customenchants\types\ChanceWeaponEnchant;
 
-class AronistEnchant extends WeaponEnchant
+class AronistEnchant extends ChanceWeaponEnchant
 {
-    /**
-     * @inheritDoc
-     */
-    public function isApplicableTo(Entity $victim)
-    : bool
-    {
-        return $victim instanceof Living;
-    }
+	protected function trigger(Player $attacker, Living $victim, int $level): void
+	{
+		if (!$victim->isOnFire()) {
+			return;
+		}
 
-    /**
-     * @inheritDoc
-     */
-    public function getDamageBonus(int $enchantmentLevel)
-    : float
-    {
-        return 0;
-    }
-
-    /**
-     * @throws RandomException
-     */
-    public function onPostAttack(Entity $attacker, Entity $victim, int $enchantmentLevel)
-    : void
-    {
-        if ($victim instanceof Player && $attacker instanceof Player) {
-            $chance = $this->getChance($enchantmentLevel, $this->getMaxLevel());
-            if (random_int(1, 100) <= $chance) {
-                while ($attacker->isOnFire()) {
-                    $additionalDamage = $enchantmentLevel * 1.5;
-
-                    $event = new EntityDamageByEntityEvent($attacker, $victim, EntityDamageEvent::CAUSE_CUSTOM, $additionalDamage);
-                    $victim->attack($event);
-                }
-                $attacker->getWorld()->addParticle($victim->getPosition(), new FlameParticle());
-            }
-        }
-    }
+		$this->dealExtraDamage($attacker, $victim, $level * 1.5);
+	}
 }
