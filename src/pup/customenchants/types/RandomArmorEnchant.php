@@ -28,7 +28,7 @@ abstract class RandomArmorEnchant extends CustomEnchant
 			if (!$armor instanceof Armor) {
 				continue;
 			}
-			foreach (EnchantScan::of($armor, static fn(object $e): bool => $e instanceof self) as [$enchant, $level]) {
+			foreach (EnchantScan::of($armor, static fn(object $e): bool => $e instanceof self, $player) as [$enchant, $level]) {
 				$enchant->execute($player, $damager, $armor, $level);
 			}
 		}

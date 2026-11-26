@@ -8,9 +8,10 @@ use JsonException;
 use pocketmine\command\CommandSender;
 use pocketmine\console\ConsoleCommandSender;
 use pocketmine\player\Player;
+use pocketmine\plugin\PharPluginLoader;
 use pocketmine\plugin\Plugin;
-use pocketmine\utils\TextFormat as TF;
 use pup\customenchants\Main;
+use pup\customenchants\MessageService;
 use Throwable;
 
 final class AddonManager
@@ -24,6 +25,12 @@ final class AddonManager
 
 	/** @var array<string, true> */
 	private array $pending = [];
+
+	/** @var array<string, array{target: string, needs: list<string>, requestedBy: string}> */
+	private array $waiting = [];
+
+	/** @var array<string, string> plugin name => addon file name of a dependency being installed */
+	private array $dependencyFiles = [];
 
 	public function __construct(private readonly Main $plugin)
 	{
@@ -107,25 +114,52 @@ final class AddonManager
 	{
 		$resolved = $this->resolve($input);
 		if ($resolved === null) {
-			$sender->sendMessage(TF::RED . "Unknown addon '$input'. Add it to addons.repositories in config.yml"
-				. " (or set addons.allow_any_repository and use owner/repo).");
+			MessageService::send($sender, 'addon_unknown', ['name' => $input]);
 			return;
 		}
 		[$name, $repository] = $resolved;
 
 		if (isset($this->pending[$name])) {
-			$sender->sendMessage(TF::YELLOW . "$name is already downloading.");
+			MessageService::send($sender, 'addon_already_downloading', ['name' => $name]);
 			return;
 		}
-		$this->pending[$name] = true;
+		$this->download($sender, $name, $repository);
+	}
 
-		$sender->sendMessage(TF::GRAY . "Downloading $name from github.com/$repository ...");
+	private function download(CommandSender $sender, string $name, string $repository): void
+	{
+		$this->pending[$name] = true;
+		MessageService::send($sender, 'addon_downloading', ['name' => $name, 'repository' => $repository]);
 		$this->plugin->getServer()->getAsyncPool()->submitTask(new AddonDownloadTask(
 			$name,
 			$repository,
 			$this->directory . $name . '.phar',
 			$sender instanceof Player ? $sender->getName() : ''
 		));
+	}
+
+	/** @return array{0: string, 1: string}|null */
+	public function resolveDependency(string $plugin, string $parentRepository): ?array
+	{
+		$resolved = $this->resolve($plugin);
+		if ($resolved !== null) {
+			return $resolved;
+		}
+
+		$config = $this->plugin->getConfig()->getNested('addons', []);
+		$config = is_array($config) ? $config : [];
+		$repositories = is_array($config['repositories'] ?? null) ? $config['repositories'] : [];
+		foreach ($repositories as $name => $repository) {
+			if (is_string($repository) && self::isRepository($repository) && strcasecmp(explode('/', $repository)[1], $plugin) === 0) {
+				return [self::fileName((string) $name), $repository];
+			}
+		}
+
+		$candidate = explode('/', $parentRepository)[0] . '/' . $plugin;
+		if (($config['allow_any_repository'] ?? false) === true && self::isRepository($candidate)) {
+			return [self::fileName($plugin), $candidate];
+		}
+		return null;
 	}
 
 	/** @param array<string, mixed> $result */
@@ -135,7 +169,8 @@ final class AddonManager
 		$sender = $this->findSender($requestedBy);
 
 		if (isset($result['error'])) {
-			$sender->sendMessage(TF::RED . "Could not install $name: {$result['error']}");
+			MessageService::send($sender, 'addon_download_failed', ['name' => $name, 'error' => (string) $result['error']]);
+			$this->settleWaiting();
 			return;
 		}
 
@@ -153,37 +188,154 @@ final class AddonManager
 		];
 		$this->saveManifest();
 
-		$check = $verified ? TF::GREEN . 'checksum verified' : TF::YELLOW . 'no checksum published';
-		$sender->sendMessage(TF::GREEN . "Downloaded $name $tag ($check" . TF::GREEN . ', sha256 ' . substr($sha, 0, 12) . '...)');
+		MessageService::send($sender, $verified ? 'addon_downloaded_verified' : 'addon_downloaded_unverified', ['name' => $name, 'tag' => $tag, 'sha256' => substr($sha, 0, 12)]);
 
 		if ($alreadyLoaded !== null) {
-			$sender->sendMessage(TF::YELLOW . 'Restart the server to switch to the new version.');
+			MessageService::send($sender, 'addon_restart_to_update', ['name' => $name]);
+			$this->settleWaiting();
 			return;
 		}
 
 		if (!@rename((string) $result['file'], $target)) {
-			$sender->sendMessage(TF::YELLOW . 'Saved; restart the server to load it.');
+			MessageService::send($sender, 'addon_saved_restart', ['name' => $name]);
+			$this->settleWaiting();
 			return;
 		}
 
+		$missing = $this->missingDependencies($target);
+		if ($missing === []) {
+			$this->load($name, $target, $requestedBy);
+			$this->settleWaiting();
+			return;
+		}
+
+		$this->waiting[$name] = ['target' => $target, 'needs' => $missing, 'requestedBy' => $requestedBy];
+		$installable = array_values(array_filter(
+			$missing,
+			fn(string $dependency): bool => $this->resolveDependency($dependency, $repository) !== null
+		));
+		if ($installable !== []) {
+			MessageService::send($sender, 'addon_installing_dependencies', ['name' => $name, 'dependencies' => implode(', ', $installable)]);
+		}
+		foreach ($installable as $dependency) {
+			$this->installDependency($sender, $dependency, $repository);
+		}
+		$this->settleWaiting();
+	}
+
+	/**
+	 * @return list<string> hard dependencies of the phar that are not loaded yet
+	 */
+	private function missingDependencies(string $file): array
+	{
+		$server = $this->plugin->getServer();
+
+		try {
+			$description = new PharPluginLoader($server->getLoader())->getPluginDescription($file);
+		} catch (Throwable) {
+			return [];
+		}
+
+		if ($description === null) {
+			return [];
+		}
+
+		$manager = $server->getPluginManager();
+
+		return array_values(array_filter(
+			$description->getDepend(),
+			static fn(string $dependency): bool =>
+				!self::isIgnoredDependency($dependency) &&
+				$manager->getPlugin($dependency) === null
+		));
+	}
+
+	private function installDependency(CommandSender $sender, string $plugin, string $parentRepository): void
+	{
+		$file = $this->dependencyFiles[$plugin] ?? null;
+		if ($file !== null && (isset($this->pending[$file]) || isset($this->waiting[$file]))) {
+			return;
+		}
+		$resolved = $this->resolveDependency($plugin, $parentRepository);
+		if ($resolved === null) {
+			return;
+		}
+		[$name, $repository] = $resolved;
+		$this->dependencyFiles[$plugin] = $name;
+		if (!isset($this->pending[$name])) {
+			$this->download($sender, $name, $repository);
+		}
+	}
+
+	private static function isIgnoredDependency(string $dependency): bool
+	{
+		//Should be only CustomEnchants but im lazy :D!
+		return in_array(
+			strtolower($dependency),
+			['customenchant', 'customenchants'],
+			true
+		);
+	}
+
+	private function settleWaiting(): void
+	{
+		$manager = $this->plugin->getServer()->getPluginManager();
+		do {
+			$changed = false;
+			foreach ($this->waiting as $name => $entry) {
+				$blocker = null;
+				$ready = true;
+				foreach ($entry['needs'] as $dependency) {
+					$loaded = $manager->getPlugin($dependency);
+					if ($loaded !== null && $loaded->isEnabled()) {
+						continue;
+					}
+					$ready = false;
+					$file = $this->dependencyFiles[$dependency] ?? null;
+					$downloading = $file !== null && isset($this->pending[$file]);
+					$queued = $file !== null && isset($this->waiting[$file]);
+					if ($loaded !== null || (!$downloading && !$queued)) {
+						$blocker = $dependency;
+						break;
+					}
+				}
+
+				if ($blocker !== null) {
+					unset($this->waiting[$name]);
+					$changed = true;
+					$key = $manager->getPlugin($blocker) !== null
+						? 'addon_dependency_disabled'
+						: (isset($this->dependencyFiles[$blocker]) ? 'addon_dependency_failed' : 'addon_dependency_unlisted');
+					MessageService::send($this->findSender($entry['requestedBy']), $key, ['name' => $name, 'dependency' => $blocker]);
+				} elseif ($ready) {
+					unset($this->waiting[$name]);
+					$changed = true;
+					$this->load($name, $entry['target'], $entry['requestedBy']);
+				}
+			}
+		} while ($changed);
+	}
+
+	private function load(string $name, string $target, string $requestedBy): void
+	{
+		$sender = $this->findSender($requestedBy);
 		try {
 			$errors = 0;
 			$loaded = $this->plugin->getServer()->getPluginManager()->loadPlugins($target, $errors);
 		} catch (Throwable $e) {
-			$sender->sendMessage(TF::RED . "Installed, but loading failed: {$e->getMessage()}. Restart to retry.");
+			MessageService::send($sender, 'addon_load_error', ['name' => $name, 'error' => $e->getMessage()]);
 			return;
 		}
 
 		if ($loaded === []) {
-			$sender->sendMessage(TF::RED . 'Installed, but PocketMine refused to load it (check the console). Restart to retry.');
+			MessageService::send($sender, 'addon_load_refused', ['name' => $name]);
 			return;
 		}
 
 		foreach ($loaded as $addon) {
 			$this->manifest[$name]['plugin'] = $addon->getName();
-			$this->enable($addon)
-				? $sender->sendMessage(TF::GREEN . 'Enabled ' . $addon->getDescription()->getFullName() . '.')
-				: $sender->sendMessage(TF::RED . $addon->getName() . ' failed to enable (check the console).');
+			$enabled = $this->enable($addon);
+			MessageService::send($sender, $enabled ? 'addon_enabled' : 'addon_enable_failed', ['name' => $name, 'plugin' => $addon->getDescription()->getFullName()]);
 		}
 		$this->saveManifest();
 	}
@@ -193,7 +345,7 @@ final class AddonManager
 		$name = self::fileName($name);
 		$file = $this->directory . $name . '.phar';
 		if (!isset($this->manifest[$name]) && !is_file($file)) {
-			$sender->sendMessage(TF::RED . "Addon '$name' is not installed.");
+			MessageService::send($sender, 'addon_not_installed', ['name' => $name]);
 			return;
 		}
 
@@ -207,9 +359,11 @@ final class AddonManager
 		unset($this->manifest[$name]);
 		$this->saveManifest();
 
-		$sender->sendMessage($deleted
-			? TF::GREEN . "Removed $name." . ($loaded !== null ? ' Restart to unload its enchants completely.' : '')
-			: TF::YELLOW . "Disabled $name, but the file is in use; it will be gone after you delete " . basename($file) . ' while the server is off.');
+		MessageService::send(
+			$sender,
+			$deleted ? ($loaded !== null ? 'addon_removed_restart' : 'addon_removed') : 'addon_remove_locked',
+			['name' => $name, 'file' => basename($file)]
+		);
 	}
 
 	public function list(CommandSender $sender): void
@@ -219,19 +373,23 @@ final class AddonManager
 		sort($names);
 
 		if ($names === []) {
-			$sender->sendMessage(TF::GRAY . 'No addons installed. Use /ce addon install <name>.');
+			MessageService::send($sender, 'addon_list_empty');
 		}
 		foreach ($names as $name) {
 			$info = $this->manifest[$name] ?? null;
 			$loaded = $this->findLoaded($name);
-			$state = $loaded !== null && $loaded->isEnabled() ? TF::GREEN . 'enabled' : TF::RED . 'not loaded';
-			$source = $info !== null ? " {$info['repository']} {$info['tag']}" : ' (installed by hand)';
-			$sender->sendMessage(TF::WHITE . $name . TF::GRAY . $source . ' - ' . $state);
+			$state = MessageService::getInstance()->get($loaded !== null && $loaded->isEnabled() ? 'addon_state_enabled' : 'addon_state_not_loaded');
+			MessageService::send($sender, $info !== null ? 'addon_list_entry' : 'addon_list_entry_manual', [
+				'name' => $name,
+				'repository' => (string) ($info['repository'] ?? ''),
+				'tag' => (string) ($info['tag'] ?? ''),
+				'state' => $state,
+			]);
 		}
 
 		$config = $this->plugin->getConfig()->getNested('addons.repositories', []);
 		if (is_array($config) && $config !== []) {
-			$sender->sendMessage(TF::GRAY . 'Available: ' . implode(', ', array_keys($config)));
+			MessageService::send($sender, 'addon_list_available', ['names' => implode(', ', array_keys($config))]);
 		}
 	}
 

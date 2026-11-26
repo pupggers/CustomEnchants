@@ -10,7 +10,7 @@
 	],
 	"require": {
 		"paroxity/commando": "dev-master",
-		"muqsit/invmenu": "dev-pm5-delay-rework",
+		"muqsit/invmenu": "dev-muqsit/fix-pm-5.41.0-packet-decode",
 		"pup/placeholderapi": "v4.0.0",
 		"muqsit/simple-packet-handler": "dev-main as 0.1.10",
 		"ext-ctype": "*"
@@ -22,5 +22,6 @@
 	"scripts": {
 		"doctor": "@php ../DevTools/bin/devtools.php doctor --project=. --virions=virions-prepared",
 		"prepare": "@php ../DevTools/bin/devtools.php prepare --project=. --virions=virions-prepared",
-		"build": "@php -d phar.readonly=0 ../DevTools/bin/devtools.php build --project=. --virions=virions-prepared --out=.. --overwrite"	}
+		"build": "@php -d phar.readonly=0 ../DevTools/bin/devtools.php build --project=. --virions=virions-prepared --out=.. --overwrite"
+	}
 }

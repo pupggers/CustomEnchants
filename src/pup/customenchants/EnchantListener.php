@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace pup\customenchants;
 
-
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\entity\EntityDamageByChildEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\event\entity\EntityEffectRemoveEvent;
 use pocketmine\event\entity\EntityShootBowEvent;
 use pocketmine\event\entity\ProjectileHitBlockEvent;
 use pocketmine\event\inventory\InventoryTransactionEvent;
@@ -18,6 +18,7 @@ use pocketmine\event\player\PlayerItemUseEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\event\player\PlayerRespawnEvent;
+use pocketmine\player\Player;
 use pup\customenchants\types\BowEnchant;
 use pup\customenchants\types\DefenseArmorEnchant;
 use pup\customenchants\types\DurabilityEnchant;
@@ -27,6 +28,9 @@ use pup\customenchants\types\RandomArmorEnchant;
 use pup\customenchants\types\SoulboundEnchant;
 use pup\customenchants\types\ToggledArmorEnchant;
 use pup\customenchants\types\ToolEnchant;
+use pup\customenchants\utils\ArmorEffects;
+use pup\customenchants\utils\HelmetSwap;
+use pup\customenchants\utils\EnchantTasks;
 
 class EnchantListener implements Listener
 {
@@ -102,14 +106,6 @@ class EnchantListener implements Listener
 		ToggledArmorEnchant::ensureArmorListener($player);
 		DurabilityEnchant::ensureListeners($player);
 		SoulboundEnchant::restore($player);
-		foreach ($player->getArmorInventory()->getContents() as $item) {
-			foreach ($item->getEnchantments() as $enchantment) {
-				$enchantment = $enchantment->getType();
-				if ($enchantment instanceof ToggledArmorEnchant) {
-					$enchantment->onEquip($player, $item, $item->getEnchantmentLevel($enchantment) );
-				}
-			}
-		}
 	}
 
 	/**
@@ -119,17 +115,9 @@ class EnchantListener implements Listener
 	public function onDeath(PlayerDeathEvent $event)
 	: void
 	{
+		HelmetSwap::onDeath($event);
 		SoulboundEnchant::onDeath($event);
-		$player = $event->getPlayer();
-		foreach ($player->getArmorInventory()->getContents() as $item) {
-			foreach ($item->getEnchantments() as $enchantment) {
-				$enchantment = $enchantment->getType();
-				if ($enchantment instanceof ToggledArmorEnchant) {
-					$enchantment->onDequip($player, $item, $item->getEnchantmentLevel($enchantment));
-				}
-			}
-		}
-		ToggledArmorEnchant::removeArmorListener($player);
+		ToggledArmorEnchant::removeArmorListener($event->getPlayer());
 	}
 
 	/**
@@ -139,8 +127,10 @@ class EnchantListener implements Listener
 	public function onQuit(PlayerQuitEvent $event): void
 	{
 		$player = $event->getPlayer();
+		HelmetSwap::restore($player);
 		ToggledArmorEnchant::removeArmorListener($player);
 		DurabilityEnchant::removeListeners($player);
+		ArmorEffects::forget($player);
 	}
 
 	/**
@@ -149,12 +139,32 @@ class EnchantListener implements Listener
 	 */
 	public function onRespawn(PlayerRespawnEvent $event): void
 	{
-		SoulboundEnchant::restore($event->getPlayer());
+		$player = $event->getPlayer();
+		SoulboundEnchant::restore($player);
+		// Respawning clears effects after this event, so re-equip armor enchants a tick later.
+		EnchantTasks::later(1, static function () use ($player): void {
+			if ($player->isConnected() && $player->isAlive()) {
+				ToggledArmorEnchant::ensureArmorListener($player);
+			}
+		});
+	}
+
+	/** @priority MONITOR */
+	public function onEffectRemove(EntityEffectRemoveEvent $event): void
+	{
+		$player = $event->getEntity();
+		$effect = $event->getEffect()->getType();
+		if (!$player instanceof Player || !ArmorEffects::isTracked($player, $effect)) {
+			return;
+		}
+		EnchantTasks::later(1, static function () use ($player, $effect): void {
+			if ($player->isConnected() && $player->isAlive()) {
+				ArmorEffects::refresh($player, $effect);
+			}
+		});
 	}
 
 	/**
-	 * Right-click on a block with an enchanted item (planters, launch...).
-	 *
 	 * @param PlayerInteractEvent $event
 	 * @priority HIGHEST
 	 */
@@ -167,7 +177,6 @@ class EnchantListener implements Listener
 	}
 
 	/**
-	 *
 	 * @param PlayerItemUseEvent $event
 	 * @priority HIGHEST
 	 */

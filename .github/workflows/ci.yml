@@ -1,0 +1,99 @@
+
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: plugin-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build PHAR with DevTools v4.1.1
+    uses: AxolotlBucketLabs/DevTools/.github/workflows/build-plugin.yml@c2eb715205a9dcb485a4ecabd17512f32f24d5d7 # v4.1.1
+    permissions:
+      contents: read
+    with:
+      project: .
+      php-version: "8.4"
+      pm-version-major: "5"
+      axolotl-ref: "5.51.2"
+      phpstan: "off"
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check whether version is already released
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLUGIN_VERSION: ${{ needs.build.outputs.plugin-version }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$PLUGIN_VERSION" ]; then
+            echo "Could not determine plugin version."
+            exit 1
+          fi
+
+          TAG="v${PLUGIN_VERSION#v}"
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Skipping."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Release $TAG does not exist. Publishing."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download PHAR artifact
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: release
+
+      - name: Publish GitHub Release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLUGIN_NAME: ${{ needs.build.outputs.plugin-name }}
+          PLUGIN_VERSION: ${{ needs.build.outputs.plugin-version }}
+          TAG: ${{ steps.check.outputs.tag }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          PHAR="$(find release -type f -name '*.phar' -print -quit)"
+
+          if [ -z "$PHAR" ]; then
+            echo "No PHAR file found in build artifact."
+            exit 1
+          fi
+
+          gh release create "$TAG" "$PHAR" \
+            --title "${PLUGIN_NAME} ${PLUGIN_VERSION}" \
+            --generate-notes \
+            --target "$COMMIT_SHA"
+
+          echo "Successfully published ${PLUGIN_NAME} ${PLUGIN_VERSION}!"

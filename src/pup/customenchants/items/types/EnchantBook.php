@@ -10,6 +10,7 @@ use pup\customenchants\items\interface\ItemInteractInterface;
 use pup\customenchants\items\ItemRegistry;
 use pup\customenchants\Main;
 use pup\customenchants\utils\Rarity;
+use pup\customenchants\utils\Settings;
 use Random\RandomException;
 
 final class EnchantBook extends CustomItem implements ItemInteractInterface
@@ -57,7 +58,7 @@ final class EnchantBook extends CustomItem implements ItemInteractInterface
 
             $enchantmentBook = new EnchantmentBook(
                 $randomEnchant,
-                1);
+                Settings::bookLevel(Rarity::fromValue($this->rarity)->name, $randomEnchant->getMaxLevel()));
 
             $itemsToGive[] = $enchantmentBook->getItem();
         }

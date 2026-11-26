@@ -17,7 +17,6 @@ trait CustomEnchantTrait
         int $maxLevel
     ) {
         $this->description = $description;
-        // The two 0s are the deprecated ItemFlags parameters, which PocketMine still requires.
         parent::__construct($name, $rarity, 0, 0, $maxLevel);
     }
 

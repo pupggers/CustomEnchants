@@ -8,10 +8,16 @@ trait ChanceTrait
 {
     private float $baseChance = 10.0;
 
+    private float $maxChance = 70.0;
+
     public function setBaseChance(float $chance): void
     {
-        $percent = $chance <= 1.0 ? $chance * 100.0 : $chance;
-        $this->baseChance = max(0.0, min(100.0, $percent));
+        $this->baseChance = self::toPercent($chance);
+    }
+
+    public function setMaxChance(float $chance): void
+    {
+        $this->maxChance = self::toPercent($chance);
     }
 
     public function getChance(int $currentLevel, int $maxLevel): float
@@ -19,13 +25,13 @@ trait ChanceTrait
         $maxLevel = max(1, $maxLevel);
         $currentLevel = max(1, min($currentLevel, $maxLevel));
 
-        if ($currentLevel === $maxLevel) {
-            return 100.0;
+        if ($maxLevel === 1) {
+            return $this->maxChance;
         }
 
-        $perLevel = (100.0 - $this->baseChance) / ($maxLevel - 1);
+        $perLevel = ($this->maxChance - $this->baseChance) / ($maxLevel - 1);
 
-        return min(100.0, $this->baseChance + ($currentLevel - 1) * $perLevel);
+        return max(0.0, min(100.0, $this->baseChance + ($currentLevel - 1) * $perLevel));
     }
 
     public function roll(int $level, float $bonusPercent = 0.0): bool
@@ -38,5 +44,10 @@ trait ChanceTrait
     public function hasChanceTrait(): bool
     {
         return true;
+    }
+
+    private static function toPercent(float $chance): float
+    {
+        return max(0.0, min(100.0, $chance <= 1.0 ? $chance * 100.0 : $chance));
     }
 }

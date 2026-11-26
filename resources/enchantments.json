@@ -5,7 +5,6 @@
 		"description": "Chance to restore food while mining.",
 		"rarity": "COMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"speed": {
@@ -13,8 +12,7 @@
 		"display_name": "Speed",
 		"description": "Gives you speed after breaking blocks.",
 		"rarity": "UNCOMMON",
-		"max_level": 2,
-		"has_chance": false
+		"max_level": 2
 	},
 	"blind": {
 		"enabled": true,
@@ -22,7 +20,6 @@
 		"description": "Chance to blind your opponent on hit.",
 		"rarity": "UNCOMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"aronist": {
@@ -31,7 +28,6 @@
 		"description": "Chance to deal extra damage while you are on fire.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.2
 	},
 	"teleport": {
@@ -39,32 +35,28 @@
 		"display_name": "Teleport",
 		"description": "Teleports you to where your arrow lands.",
 		"rarity": "RARE",
-		"max_level": 1,
-		"has_chance": false
+		"max_level": 1
 	},
 	"overload": {
 		"enabled": true,
 		"display_name": "Overload",
 		"description": "Increases your maximum health while worn.",
 		"rarity": "RARE",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"glowing": {
 		"enabled": true,
 		"display_name": "Glowing",
 		"description": "Gives you night vision while worn.",
 		"rarity": "COMMON",
-		"max_level": 1,
-		"has_chance": false
+		"max_level": 1
 	},
 	"gears": {
 		"enabled": true,
 		"display_name": "Gears",
 		"description": "Increases your movement speed while worn.",
 		"rarity": "RARE",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"restore": {
 		"enabled": true,
@@ -72,7 +64,6 @@
 		"description": "Chance to repair your tool as you mine.",
 		"rarity": "UNCOMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"shuffle": {
@@ -81,7 +72,6 @@
 		"description": "Chance to shuffle things up when you are hit.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.2
 	},
 	"aquatic": {
@@ -89,8 +79,7 @@
 		"display_name": "Aquatic",
 		"description": "Lets you breathe underwater while worn.",
 		"rarity": "COMMON",
-		"max_level": 1,
-		"has_chance": false
+		"max_level": 1
 	},
 	"autosmelt": {
 		"enabled": true,
@@ -98,7 +87,6 @@
 		"description": "Chance to smelt the blocks you mine.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.2
 	},
 	"experience": {
@@ -107,7 +95,6 @@
 		"description": "Chance to gain extra XP when mining.",
 		"rarity": "UNCOMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.2
 	},
 	"poison": {
@@ -116,7 +103,6 @@
 		"description": "Chance to poison the target.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"confuse": {
@@ -125,7 +111,6 @@
 		"description": "Chance to give the target nausea.",
 		"rarity": "EPIC",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"iceaspect": {
@@ -134,7 +119,6 @@
 		"description": "Chance to slow the target.",
 		"rarity": "EPIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"famine": {
@@ -143,7 +127,6 @@
 		"description": "Chance to give the target hunger.",
 		"rarity": "UNCOMMON",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"interrupt": {
@@ -152,7 +135,6 @@
 		"description": "Chance to give the target mining fatigue.",
 		"rarity": "EPIC",
 		"max_level": 2,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"reaper": {
@@ -161,7 +143,6 @@
 		"description": "Chance to wither and blind the target.",
 		"rarity": "RARE",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"paralyze": {
@@ -170,7 +151,6 @@
 		"description": "Chance to slow the target and make their swings slower.",
 		"rarity": "RARE",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"berserk": {
@@ -179,7 +159,6 @@
 		"description": "Chance of strength and mining fatigue for you.",
 		"rarity": "UNCOMMON",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"featherweight": {
@@ -188,7 +167,6 @@
 		"description": "Chance to get a burst of haste.",
 		"rarity": "UNCOMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"lifesteal": {
@@ -197,7 +175,6 @@
 		"description": "Chance to steal health when attacking.",
 		"rarity": "LEGENDARY",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"rebound": {
@@ -205,8 +182,7 @@
 		"display_name": "Rebound",
 		"description": "Gain some health back after kills.",
 		"rarity": "LEGENDARY",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"ravenous": {
 		"enabled": true,
@@ -214,7 +190,6 @@
 		"description": "Chance to regain hunger while fighting.",
 		"rarity": "UNCOMMON",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"devour": {
@@ -223,7 +198,6 @@
 		"description": "Chance to restore food when you kill.",
 		"rarity": "UNCOMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"doublestrike": {
@@ -232,7 +206,6 @@
 		"description": "A chance to strike twice.",
 		"rarity": "LEGENDARY",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"critical": {
@@ -240,8 +213,7 @@
 		"display_name": "Critical",
 		"description": "Increase damage done with a critical hit.",
 		"rarity": "RARE",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"barbarian": {
 		"enabled": true,
@@ -249,7 +221,6 @@
 		"description": "Chance to inflict more axe damage.",
 		"rarity": "LEGENDARY",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"magnet": {
@@ -258,7 +229,6 @@
 		"description": "Your attack pulls players towards you.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"forcefield": {
@@ -267,7 +237,6 @@
 		"description": "Chance to push away your opponent.",
 		"rarity": "COMMON",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.2
 	},
 	"disarm": {
@@ -276,7 +245,6 @@
 		"description": "Chance to disarm your opponent.",
 		"rarity": "HEROIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"disarmor": {
@@ -285,7 +253,6 @@
 		"description": "Chance of unequipping a random armor piece from your opponent.",
 		"rarity": "LEGENDARY",
 		"max_level": 8,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"fuddle": {
@@ -294,7 +261,6 @@
 		"description": "Disorganize your opponent's hotbar.",
 		"rarity": "EPIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"decapitation": {
@@ -303,7 +269,6 @@
 		"description": "Chance to have your opponent's head drop on death.",
 		"rarity": "COMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.2
 	},
 	"exalted": {
@@ -312,7 +277,6 @@
 		"description": "A chance of removing your bad potion effects.",
 		"rarity": "EPIC",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"epicness": {
@@ -320,8 +284,7 @@
 		"display_name": "Epicness",
 		"description": "Display particles on attack.",
 		"rarity": "COMMON",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"hasten": {
 		"enabled": true,
@@ -329,7 +292,6 @@
 		"description": "Chance to gain haste after breaking blocks.",
 		"rarity": "COMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.2
 	},
 	"telepathy": {
@@ -337,8 +299,7 @@
 		"display_name": "Telepathy",
 		"description": "Broken blocks go straight into your inventory.",
 		"rarity": "UNCOMMON",
-		"max_level": 4,
-		"has_chance": false
+		"max_level": 4
 	},
 	"trench": {
 		"enabled": true,
@@ -346,7 +307,6 @@
 		"description": "Chance to break blocks in a wider area.",
 		"rarity": "EPIC",
 		"max_level": 9,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"veinminer": {
@@ -354,8 +314,7 @@
 		"display_name": "Vein Miner",
 		"description": "Mine an entire vein of ore.",
 		"rarity": "RARE",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"timber": {
 		"enabled": true,
@@ -363,7 +322,6 @@
 		"description": "Chance to fell a whole tree in one hit.",
 		"rarity": "EPIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"replenish": {
@@ -372,7 +330,6 @@
 		"description": "Chance to restore food while mining.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"hellfire": {
@@ -381,7 +338,6 @@
 		"description": "Arrows set the target on fire.",
 		"rarity": "EPIC",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"piercing": {
@@ -389,16 +345,14 @@
 		"display_name": "Piercing",
 		"description": "Arrows inflict more damage.",
 		"rarity": "EPIC",
-		"max_level": 5,
-		"has_chance": false
+		"max_level": 5
 	},
 	"archer": {
 		"enabled": true,
 		"display_name": "Archer",
 		"description": "Increases damage dealt with bows.",
 		"rarity": "EPIC",
-		"max_level": 4,
-		"has_chance": false
+		"max_level": 4
 	},
 	"snare": {
 		"enabled": true,
@@ -406,7 +360,6 @@
 		"description": "Chance to slow and fatigue enemies you shoot.",
 		"rarity": "RARE",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"perish": {
@@ -415,7 +368,6 @@
 		"description": "A chance to give the wither effect.",
 		"rarity": "UNCOMMON",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"virus": {
@@ -424,7 +376,6 @@
 		"description": "A chance of giving the poison effect.",
 		"rarity": "UNCOMMON",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"poisoned": {
@@ -433,7 +384,6 @@
 		"description": "Chance to poison whoever hits you.",
 		"rarity": "RARE",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"frozen": {
@@ -442,7 +392,6 @@
 		"description": "Chance to slow whoever hits you.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"wither": {
@@ -451,7 +400,6 @@
 		"description": "Chance to wither whoever hits you.",
 		"rarity": "RARE",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"voodoo": {
@@ -460,7 +408,6 @@
 		"description": "Chance to weaken whoever hits you.",
 		"rarity": "RARE",
 		"max_level": 6,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"curse": {
@@ -469,7 +416,6 @@
 		"description": "Chance to give your attacker mining fatigue.",
 		"rarity": "RARE",
 		"max_level": 2,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"unholy": {
@@ -478,7 +424,6 @@
 		"description": "Defend with weakness and wither.",
 		"rarity": "LEGENDARY",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"divert": {
@@ -487,7 +432,6 @@
 		"description": "Chance to poison the attacker and regenerate.",
 		"rarity": "LEGENDARY",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"angelic": {
@@ -496,7 +440,6 @@
 		"description": "Heals you when damaged.",
 		"rarity": "EPIC",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"molten": {
@@ -505,7 +448,6 @@
 		"description": "Chance of setting your attacker ablaze.",
 		"rarity": "UNCOMMON",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"extinguish": {
@@ -514,7 +456,6 @@
 		"description": "Chance to put yourself out when on fire.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"springs": {
@@ -522,32 +463,28 @@
 		"display_name": "Springs",
 		"description": "Gives jump boost.",
 		"rarity": "RARE",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"obsidianshield": {
 		"enabled": true,
 		"display_name": "Obsidianshield",
 		"description": "Gives permanent fire resistance.",
 		"rarity": "EPIC",
-		"max_level": 1,
-		"has_chance": false
+		"max_level": 1
 	},
 	"armored": {
 		"enabled": true,
 		"display_name": "Armored",
 		"description": "Decreases damage from enemy swords by 2% per level.",
 		"rarity": "LEGENDARY",
-		"max_level": 4,
-		"has_chance": false
+		"max_level": 4
 	},
 	"heavy": {
 		"enabled": true,
 		"display_name": "Heavy",
 		"description": "Decreases damage from enemy bows by 2% per level.",
 		"rarity": "EPIC",
-		"max_level": 5,
-		"has_chance": false
+		"max_level": 5
 	},
 	"tank": {
 		"enabled": true,
@@ -555,7 +492,6 @@
 		"description": "Chance to decrease damage from enemy axes by 2% per level.",
 		"rarity": "EPIC",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"dodge": {
@@ -564,7 +500,6 @@
 		"description": "Chance to dodge physical attacks; higher while sneaking.",
 		"rarity": "EPIC",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"arrowdeflect": {
@@ -573,7 +508,6 @@
 		"description": "Chance to prevent an enemy arrow from dealing damage.",
 		"rarity": "EPIC",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"creeperarmor": {
@@ -582,7 +516,6 @@
 		"description": "Chance to be immune to explosions; heals at higher levels.",
 		"rarity": "EPIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"jellylegs": {
@@ -591,7 +524,6 @@
 		"description": "Chance to negate fall damage.",
 		"rarity": "EPIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"chunky": {
@@ -600,7 +532,6 @@
 		"description": "Chance to receive less damage.",
 		"rarity": "LEGENDARY",
 		"max_level": 6,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"reflect": {
@@ -609,7 +540,6 @@
 		"description": "Absorb enemy damage and reflect it back.",
 		"rarity": "UNCOMMON",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.15
 	},
 	"phoenix": {
@@ -618,7 +548,6 @@
 		"description": "Chance to revive yourself when killed.",
 		"rarity": "HEROIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"vampire": {
@@ -627,7 +556,6 @@
 		"description": "Chance to heal a few seconds after you strike.",
 		"rarity": "RARE",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"bleed": {
@@ -636,7 +564,6 @@
 		"description": "Make your opponent bleed.",
 		"rarity": "EPIC",
 		"max_level": 6,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"permafrost": {
@@ -645,7 +572,6 @@
 		"description": "Chance to slow and bleed opponents.",
 		"rarity": "EPIC",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"ambit": {
@@ -654,7 +580,6 @@
 		"description": "Damages entities around the target; radius grows with level.",
 		"rarity": "EPIC",
 		"max_level": 7,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"cleave": {
@@ -663,7 +588,6 @@
 		"description": "Damages players around the target; radius grows with level.",
 		"rarity": "EPIC",
 		"max_level": 7,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"immolation": {
@@ -672,7 +596,6 @@
 		"description": "Set all mobs around the target on fire.",
 		"rarity": "EPIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"inflame": {
@@ -681,7 +604,6 @@
 		"description": "Set all players around the target on fire.",
 		"rarity": "LEGENDARY",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"replanter": {
@@ -689,8 +611,7 @@
 		"display_name": "Replanter",
 		"description": "Replants crops when harvested.",
 		"rarity": "UNCOMMON",
-		"max_level": 1,
-		"has_chance": false
+		"max_level": 1
 	},
 	"rebreather": {
 		"enabled": true,
@@ -698,7 +619,6 @@
 		"description": "Chance to regain air when mining underwater.",
 		"rarity": "COMMON",
 		"max_level": 2,
-		"has_chance": true,
 		"chance": 0.2
 	},
 	"planter": {
@@ -706,48 +626,42 @@
 		"display_name": "Planter",
 		"description": "Plant wheat seeds in an area by sneak + right-clicking farmland.",
 		"rarity": "EPIC",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"carrotplanter": {
 		"enabled": true,
 		"display_name": "Carrot Planter",
 		"description": "Plant carrots in an area by sneak + right-clicking farmland.",
 		"rarity": "COMMON",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"potatoplanter": {
 		"enabled": true,
 		"display_name": "Potato Planter",
 		"description": "Plant potatoes in an area by sneak + right-clicking farmland.",
 		"rarity": "COMMON",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"launch": {
 		"enabled": true,
 		"display_name": "Launch",
 		"description": "Launch yourself by right-clicking.",
 		"rarity": "LEGENDARY",
-		"max_level": 3,
-		"has_chance": false
+		"max_level": 3
 	},
 	"unbreakable": {
 		"enabled": true,
 		"display_name": "Unbreakable",
 		"description": "Tools with this enchant never lose durability.",
 		"rarity": "HEROIC",
-		"max_level": 1,
-		"has_chance": false
+		"max_level": 1
 	},
 	"abiding": {
 		"enabled": true,
 		"display_name": "Abiding",
 		"description": "Weapons with this enchant become unbreakable.",
 		"rarity": "LEGENDARY",
-		"max_level": 1,
-		"has_chance": false
+		"max_level": 1
 	},
 	"reforged": {
 		"enabled": true,
@@ -755,7 +669,6 @@
 		"description": "Items lose durability more slowly.",
 		"rarity": "RARE",
 		"max_level": 10,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"immortal": {
@@ -764,7 +677,6 @@
 		"description": "Chance to stop armor losing durability.",
 		"rarity": "HEROIC",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"soulbound": {
@@ -773,7 +685,6 @@
 		"description": "A chance to keep this item when you die.",
 		"rarity": "HEROIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"implants": {
@@ -782,7 +693,6 @@
 		"description": "Chance to restore food every few seconds.",
 		"rarity": "EPIC",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"wings": {
@@ -790,8 +700,7 @@
 		"display_name": "Wings",
 		"description": "Allows flying when worn.",
 		"rarity": "LEGENDARY",
-		"max_level": 1,
-		"has_chance": false
+		"max_level": 1
 	},
 	"trickster": {
 		"enabled": true,
@@ -799,7 +708,6 @@
 		"description": "When hit, chance to teleport behind your opponent.",
 		"rarity": "RARE",
 		"max_level": 8,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"ragdoll": {
@@ -808,7 +716,6 @@
 		"description": "Chance to be pushed back when getting hit.",
 		"rarity": "EPIC",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"convulse": {
@@ -817,7 +724,6 @@
 		"description": "Chance to throw your attackers into the air.",
 		"rarity": "LEGENDARY",
 		"max_level": 6,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"safeguard": {
@@ -826,7 +732,6 @@
 		"description": "Chance to gain damage resistance when defending.",
 		"rarity": "EPIC",
 		"max_level": 2,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"lucid": {
@@ -835,7 +740,6 @@
 		"description": "Chance to cure blindness and gain night vision when hit.",
 		"rarity": "LEGENDARY",
 		"max_level": 3,
-		"has_chance": true,
 		"chance": 0.05
 	},
 	"disappear": {
@@ -844,7 +748,6 @@
 		"description": "Chance to become invisible when low on health.",
 		"rarity": "EPIC",
 		"max_level": 4,
-		"has_chance": true,
 		"chance": 0.1
 	},
 	"shockwave": {
@@ -853,7 +756,6 @@
 		"description": "Chance to push back your attacker when your health is low.",
 		"rarity": "RARE",
 		"max_level": 5,
-		"has_chance": true,
 		"chance": 0.1
 	}
 }

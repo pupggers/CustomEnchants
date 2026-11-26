@@ -83,35 +83,20 @@ final class BookDust extends CustomItem implements InventoryTransactionInterface
             return;
         }
 
-        $success = $tag->getInt('success');
-        $destroy = $tag->getInt('destroy', Settings::bookDestroyChance());
+        $success = Settings::clamp($tag->getInt('success'));
         $amount = ItemRegistry::getAmount($this->type->value, $this->type->defaultAmount());
 
         $newSuccess = $success;
-        $newDestroy = $destroy;
-
-        switch ($this->type) {
-            case DustType::GLOWSTONE:
-                if ($success >= 100) {
-                    $messages->send($player, 'dust_maxed');
-                    $world->addSound($player->getLocation(), new AnvilFallSound());
-                    $e->cancel();
-                    return;
-                }
-                $newSuccess = Settings::clamp($success + $amount);
-                break;
-            case DustType::GUNPOWDER:
-                if ($destroy <= 0) {
-                    $messages->send($player, 'dust_maxed');
-                    $world->addSound($player->getLocation(), new AnvilFallSound());
-                    $e->cancel();
-                    return;
-                }
-                $newDestroy = Settings::clamp($destroy - $amount);
-                break;
-            case DustType::BIO:
-                break;
+        if ($this->type !== DustType::BIO) {
+            if ($success >= 100) {
+                $messages->send($player, 'dust_maxed');
+                $world->addSound($player->getLocation(), new AnvilFallSound()); //Make it a player packet
+                $e->cancel();
+                return;
+            }
+            $newSuccess = Settings::clamp($success + $amount);
         }
+        $newDestroy = Settings::bookDestroyFor($newSuccess);
 
         if ($this->type !== DustType::BIO) {
             $enchant = Main::getInstance()->getEnchantManager()->getByKey($tag->getString('enchant', ''));
@@ -120,7 +105,7 @@ final class BookDust extends CustomItem implements InventoryTransactionInterface
                 $e->cancel();
                 return;
             }
-            $rebuilt = new EnchantmentBook($enchant, $tag->getInt('level', 1), $newSuccess, $newDestroy);
+            $rebuilt = new EnchantmentBook($enchant, $tag->getInt('level', 1), $newSuccess);
             $targetAction->getInventory()->setItem($targetAction->getSlot(), $rebuilt->getItem());
         }
 

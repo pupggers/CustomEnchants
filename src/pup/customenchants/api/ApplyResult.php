@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace pup\customenchants\api;
 
-final class ApplyResult
+final readonly class ApplyResult
 {
 	private function __construct(
-		public readonly ApplyStatus $status,
-		public readonly ?string $other = null,
-		public readonly int $level = 0,
+		public ApplyStatus $status,
+		public ?string     $other = null,
+		public int         $level = 0,
 	) {}
 
 	public static function ok(): self { return new self(ApplyStatus::OK); }

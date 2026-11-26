@@ -16,12 +16,12 @@ use pup\customenchants\items\CustomItem;
 use pup\customenchants\items\interface\InventoryTransactionInterface;
 use pup\customenchants\items\ItemRegistry;
 use pup\customenchants\Main;
-use pup\customenchants\Settings;
 use pup\customenchants\utils\Rarity;
+use pup\customenchants\utils\Settings;
 
 final class BlackScroll extends CustomItem implements InventoryTransactionInterface
 {
-	private const int MIN_CHANCE = 1;
+	private const int MIN_CHANCE = 0;
 	private const int MAX_CHANCE = 100;
 
 	public function __construct(private int $chance = 50)
@@ -93,7 +93,7 @@ final class BlackScroll extends CustomItem implements InventoryTransactionInterf
 		$removable = [];
 		foreach ($targetItem->getEnchantments() as $instance) {
 			$type = $instance->getType();
-			if ($type instanceof CustomEnchantInterface && $type->getRarity() === Rarity::HEROIC->value) {
+			if ($type instanceof CustomEnchantInterface && $type->getRarity() === Rarity::HEROIC) {
 				continue;
 			}
 			$removable[] = $instance;

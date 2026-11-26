@@ -1,10 +1,9 @@
 <?php
 
+declare(strict_types=1);
 
 namespace pup\customenchants\enchants\armor\helmet;
 
-
-use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\item\Item;
 use pocketmine\player\Player;
@@ -12,18 +11,13 @@ use pup\customenchants\types\ToggledArmorEnchant;
 
 class GlowingEnchant extends ToggledArmorEnchant
 {
-
-    public function onEquip(Player $player, Item $item, int $level)
-    : void
+    public function onEquip(Player $player, Item $item, int $level, int $slot): void
     {
-        $player->getEffects()->add(new EffectInstance(VanillaEffects::NIGHT_VISION(), 2147483647, max(0, $level - 1),true, false, null, true));
+        $this->grantEffect($player, $slot, VanillaEffects::NIGHT_VISION(), max(0, $level - 1));
     }
 
-    public function onDequip(Player $player, Item $item, int $level)
-    : void
+    public function onDequip(Player $player, Item $item, int $level, int $slot): void
     {
-        if ($player->getEffects()->has(VanillaEffects::NIGHT_VISION())) {
-            $player->getEffects()->remove(VanillaEffects::NIGHT_VISION());
-        }
+        $this->revokeEffect($player, $slot, VanillaEffects::NIGHT_VISION());
     }
 }

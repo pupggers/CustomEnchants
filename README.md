@@ -21,12 +21,18 @@ A clash never replaces anything: the book / command fails and the item is left a
 Built-in clashes are in `DefaultEnchants::CONFLICT_GROUPS`; setting `conflicts` in the JSON overrides them per enchant.
 
 ## Addons
-Addons (e.g. the Cosmic pack) are separate plugin phars, not bundled into this phar. List trusted GitHub
+Addons are separate plugin phars, not bundled into this phar. List trusted GitHub
 repositories under `addons.repositories` in `config.yml`, then run `/ce addon install <name>`: the latest
 release's `.phar` is downloaded into `plugin_data/CustomEnchant/addons/` and loaded. Addons register
 their enchants through `CustomEnchantsAPI::registerAll()`.
 
-## Credit
-Originally based on [ATEnchants](https://github.com/Prim69-PM/ATEnchants) by Prim69
+If an addon's `plugin.yml` lists a `depend` that isn't loaded (e.g. Cosmic and Fabled need `CustomEnchantsSouls`),
+the installer fetches it first, from a `repositories` entry whose alias or repo name matches the plugin name,
+then loads the addon. `softdepend` entries are left alone.
 
-Ion even wanna finish this ;-;
+## Messages
+Every message is a key under `messages:` in `config.yml`, rendered through PlaceholderAPI (colors, `{player}`,
+`{server_online}`, `{enchant_name:<key>}`...). Set one to `""` to turn it off. PlaceholderAPI is shaded into this phar,
+so addons use it through the API: `CustomEnchantsAPI::registerMessages($this, $defaults)` (owners override them in the
+addon's `config.yml` or here), `sendMessage()`, `sendPopup()`, `formatMessage()` and `registerPlaceholder()`.
+The Souls addon adds `{souls}` and `{souls:<player>}`.

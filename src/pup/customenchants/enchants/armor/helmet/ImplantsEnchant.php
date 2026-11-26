@@ -11,32 +11,32 @@ use pup\customenchants\utils\EnchantTasks;
 
 class ImplantsEnchant extends ToggledArmorEnchant
 {
-    /** @var array<string, true> */
+    /** @var array<int, true> keyed by spl_object_id, so a rejoin gets a fresh timer */
     private static array $running = [];
 
-    public function onEquip(Player $player, Item $item, int $level): void
+    public function onEquip(Player $player, Item $item, int $level, int $slot): void
     {
-        $id = $player->getXuid();
+        $id = spl_object_id($player);
         if (isset(self::$running[$id])) {
             return;
         }
         self::$running[$id] = true;
-        EnchantTasks::repeatTimes(100, PHP_INT_MAX, function () use ($player, $id, $level): bool {
-            $level = $player->getArmorInventory()->getHelmet()->getEnchantment($this)?->getLevel();
-            if (!$player->isConnected() || $level === null) {
+        EnchantTasks::repeatTimes(100, PHP_INT_MAX, function () use ($player, $id): bool {
+            $level = $player->isConnected() && !$player->isClosed()
+                ? $player->getArmorInventory()->getHelmet()->getEnchantment($this)?->getLevel()
+                : null;
+            if ($level === null) {
                 unset(self::$running[$id]);
                 return false;
             }
-            if (random_int(1, 100) <= $this->getChance($level, $this->getMaxLevel())) {
+            if ($player->isAlive() && random_int(1, 100) <= $this->getChance($level, $this->getMaxLevel())) {
                 $player->getHungerManager()->addFood(1.0);
             }
             return true;
         });
     }
 
-    public function onDequip(Player $player, Item $item, int $level): void
+    public function onDequip(Player $player, Item $item, int $level, int $slot): void
     {
-		$id = $player->getXuid();
-		unset(self::$running[$id]);
     }
 }

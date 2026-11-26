@@ -14,7 +14,7 @@ abstract class InteractEnchant extends CustomEnchant
 {
 	public static function onInteract(Player $player, Item $item, ?Block $block): void
 	{
-		foreach (EnchantScan::of($item, static fn(object $e): bool => $e instanceof self) as [$enchant, $level]) {
+		foreach (EnchantScan::of($item, static fn(object $e): bool => $e instanceof self, $player) as [$enchant, $level]) {
 			$enchant->execute($player, $item, $block, $level);
 		}
 	}

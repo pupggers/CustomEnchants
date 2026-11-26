@@ -1,4 +1,4 @@
-name: CustomEnchant
+name: CustomEnchants
 main: pup\customenchants\Main
 author: pup
 api: 5.0.0
@@ -6,17 +6,17 @@ version: 2.0.0
 
 permissions:
   enchant.command:
-    default: op
-    description: Base enchant command
+    default: true
+    description: Open the Enchanter shop with /ce
+  enchant.command.tinkerer:
+    default: true
+    description: Trade enchantment books for Magic Dust
   enchant.command.add:
     default: op
     description: Add an enchant to an item
   enchant.command.remove:
     default: op
     description: Remove an enchant from an item
-  enchant.command.test:
-    default: op
-    description: Test Enchants
   enchant.command.addon:
     default: op
     description: Install, list or remove enchant addons (downloads code from GitHub)

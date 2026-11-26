@@ -8,8 +8,8 @@ use CortexPE\Commando\args\RawStringArgument;
 use CortexPE\Commando\BaseSubCommand;
 use CortexPE\Commando\exception\ArgumentOrderException;
 use pocketmine\command\CommandSender;
-use pocketmine\utils\TextFormat as TF;
 use pup\customenchants\Main;
+use pup\customenchants\MessageService;
 
 final class AddonSub extends BaseSubCommand
 {
@@ -36,7 +36,7 @@ final class AddonSub extends BaseSubCommand
             $action === 'list' => $addons->list($sender),
             $action === 'install' && $name !== null => $addons->install($sender, $name),
             $action === 'remove' && $name !== null => $addons->remove($sender, $name),
-            default => $sender->sendMessage(TF::RED . "Usage: /ce addon <list | install <name> | remove <name>>"),
+            default => MessageService::send($sender, 'addon_usage'),
         };
     }
 }
