@@ -25,6 +25,8 @@ jobs:
       pm-version-major: "5"
       axolotl-ref: "5.51.2"
       phpstan: "off"
+      prepare-dependencies: true
+      virions: virions-prepared
 
   release:
     name: Publish GitHub Release
